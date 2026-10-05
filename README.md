@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ANGEL ONE DOCUMENTS
 
-## Getting Started
+Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for the public website, service-request workflow, and admin portal.
 
-First, run the development server:
+## Requirements
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 20+
+- MongoDB (local or Atlas)
+- SMTP credentials for office notifications and client acknowledgements
+- Private document storage: local filesystem (development) or S3-compatible bucket (production)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Copy environment variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-## Learn More
+2. Set at minimum:
 
-To learn more about Next.js, take a look at the following resources:
+   - `MONGODB_URI`
+   - `SESSION_SECRET` (32+ random characters)
+   - `NEXT_PUBLIC_SITE_URL`
+   - `OFFICE_EMAIL` (defaults to reception@angelonedocuments.com)
+   - SMTP variables when you are ready to send email
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Install and seed services:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm install
+   npm run seed:services
+   ```
 
-## Deploy on Vercel
+4. Create the first admin (no public registration):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   npm run create:admin -- you@example.com "YourSecurePassword"
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. Start development:
+
+   ```bash
+   npm run dev
+   ```
+
+   - Public site: [http://localhost:3000](http://localhost:3000)
+   - Admin: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
+## Document uploads
+
+- Combined PDF limit: **10 MB** (enforced client- and server-side).
+- PDFs are stored privately (`STORAGE_DRIVER=local` uses `.data/private-uploads`, not served as static files).
+- Production: set `STORAGE_DRIVER=s3` and configure S3 variables.
+- On platforms with a smaller serverless body limit (e.g. Vercel ~4.5 MB), deploy with S3 direct upload or a host that allows 10 MB request bodies. This project submits multipart form data to `/api/service-requests`; increase platform limits or extend with presigned uploads if needed.
+
+## Email behaviour
+
+- Office summary → `OFFICE_EMAIL` / reception@angelonedocuments.com with `Reply-To` set to the requester.
+- Requester receives a short acknowledgement with reference number only (no matter details or attachments).
+- If the request is saved but SMTP fails, the booking remains in MongoDB with `officeEmailStatus: failed`. Retry from **Admin → Bookings → [request] → Retry office email**.
+
+## Admin portal
+
+| Route | Purpose |
+|-------|---------|
+| `/admin/login` | Sign in |
+| `/admin` | Dashboard counts and recent requests |
+| `/admin/services` | Manage services shown on the site and form |
+| `/admin/bookings` | Search, filter, and manage service requests |
+| `/admin/testimonials` | Add/edit testimonials (unpublished by default) |
+
+Historical bookings keep service **title snapshots**; deactivating or deleting a service does not alter past requests.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run seed:services` | Idempotent seed of the five default services |
+| `npm run create:admin` | Create first admin user |
+| `npm run typecheck` | TypeScript check |
+| `npm run lint` | ESLint |
+| `npm run build` | Production build |
+
+## Production
+
+1. Set all production environment variables on your host (see `.env.example`). **Use only the host’s env UI** — do not rely on a different `MONGODB_URI` in your shell than the one the app reads.
+2. Use MongoDB Atlas (or managed MongoDB). Run once against **the same** `MONGODB_URI` the app uses:
+   ```bash
+   npm run seed:services
+   npm run create:admin -- admin@yourdomain.com "long-secure-password" --reset
+   ```
+3. Set `STORAGE_DRIVER=s3` with a private bucket for PDFs.
+4. Configure verified SMTP (`SMTP_FROM`, `SMTP_*`).
+5. Set `NEXT_PUBLIC_SITE_URL` to your canonical HTTPS URL (sitemap, metadata, emails).
+6. Build and start:
+   ```bash
+   npm run lint
+   npm run typecheck
+   npm run build
+   npm run start
+   ```
+
+Dev-only helpers (`/api/auth/seed-admin`, `/api/auth/seed-services`, `/api/auth/db-check`) return **404** in production.
+
+Admin routes are excluded from indexing via `robots.txt`.
+
+## Verification checklist
+
+- [ ] `npm run seed:services` and `npm run create:admin` succeed
+- [ ] Submit a valid request on `/contact` → appears in admin with reference number
+- [ ] Invalid PDF / oversize file rejected by API
+- [ ] `/api/admin/documents` and admin pages return 401 when logged out
+- [ ] Publish a testimonial → visible on homepage; unpublish → section hidden when empty
+
+Without SMTP or S3 credentials, core flows still work locally; email states will show as failed until SMTP is configured.
