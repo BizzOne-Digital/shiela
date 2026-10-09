@@ -37,7 +37,6 @@ export async function createService(data: {
     active: data.active,
   });
   revalidatePath("/");
-  revalidatePath("/contact");
   revalidatePath("/admin/services");
 }
 
@@ -63,7 +62,6 @@ export async function updateService(
     active: data.active,
   });
   revalidatePath("/");
-  revalidatePath("/contact");
   revalidatePath("/admin/services");
 }
 

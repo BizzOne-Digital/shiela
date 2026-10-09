@@ -86,7 +86,15 @@ body {
 }
 
 .input {
-  @apply w-full min-h-[44px] rounded-xl border border-pale-gray/80 bg-soft-white py-2.5 ps-4 pe-4 text-base text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm;
+  @apply w-full min-h-[44px] max-w-full rounded-xl border border-pale-gray/80 bg-soft-white py-2.5 ps-4 pe-4 text-base text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 md:text-sm;
+}
+
+select.input {
+  @apply text-base md:text-sm;
+}
+
+textarea.input {
+  @apply text-base md:text-sm;
 }
 
 /* Leading/trailing icons — chained with .input for correct cascade */

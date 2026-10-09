@@ -223,7 +223,7 @@ export function ClosingCTA() {
               availability.
             </p>
             <Link
-              href="/contact"
+              href="/#contact"
               className="mt-8 inline-flex rounded-full bg-soft-white px-8 py-3.5 text-sm font-semibold text-ink transition hover:scale-[1.02]"
             >
               Submit a Service Request

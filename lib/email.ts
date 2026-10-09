@@ -28,7 +28,7 @@ export async function sendOfficeNotification(
   adminDownloadBase?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const transport = getTransport();
-  const to = process.env.OFFICE_EMAIL ?? BUSINESS.receptionEmail;
+  const to = process.env.OFFICE_EMAIL ?? BUSINESS.serviceRequestsEmail;
   if (!transport) {
     return { ok: false, error: "SMTP not configured" };
   }
@@ -101,7 +101,7 @@ export async function sendAcknowledgement(
 
   const html = `
     <p>Hello ${escapeHtml(request.fullName)},</p>
-    <p>Thank you for contacting ${escapeHtml(BUSINESS.shortName)}. We have received your service request.</p>
+    <p>Thank you for contacting ${escapeHtml(BUSINESS.shortName)}. We have received your service request and appreciate your business.</p>
     <p><strong>Reference number:</strong> ${escapeHtml(request.referenceNumber)}</p>
     <p>Our office will review your requirements and contact you regarding pricing and availability. Submitting this form does not confirm acceptance of service.</p>
     <p>If you need to reach us: <a href="tel:+19052137809">${BUSINESS.phone}</a> · <a href="mailto:${BUSINESS.receptionEmail}">${BUSINESS.receptionEmail}</a></p>
@@ -109,10 +109,15 @@ export async function sendAcknowledgement(
   `;
 
   try {
+    const ackFrom =
+      process.env.SMTP_ACK_FROM ??
+      `Angel One Documents <${BUSINESS.receptionEmail}>`;
+
     await transport.sendMail({
-      from: process.env.SMTP_FROM ?? `noreply@angelonedocuments.com`,
+      from: ackFrom,
       to: request.email,
-      subject: `Request received — ${request.referenceNumber}`,
+      replyTo: BUSINESS.receptionEmail,
+      subject: `Thank you — request received (${request.referenceNumber})`,
       html,
     });
     return { ok: true };

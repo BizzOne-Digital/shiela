@@ -11,7 +11,7 @@ export function PageBanner({
   description?: string;
 }) {
   return (
-    <section className="mesh-soft border-b border-black/[0.04] py-12 md:py-16">
+    <section className="mesh-soft overflow-x-clip border-b border-black/[0.04] py-10 md:py-16">
       <RevealSection>
         <div className="site-container-narrow">
           <RevealText>

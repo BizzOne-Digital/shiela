@@ -22,7 +22,7 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
    - `MONGODB_URI`
    - `SESSION_SECRET` (32+ random characters)
    - `NEXT_PUBLIC_SITE_URL`
-   - `OFFICE_EMAIL` (defaults to reception@angelonedocuments.com)
+   - `OFFICE_EMAIL` (defaults to servicerequests@angelonedocuments.com)
    - SMTP variables when you are ready to send email
 
 3. Install and seed services:
@@ -56,7 +56,7 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
 
 ## Email behaviour
 
-- Office summary → `OFFICE_EMAIL` / reception@angelonedocuments.com with `Reply-To` set to the requester.
+- Office summary → `OFFICE_EMAIL` / servicerequests@angelonedocuments.com with `Reply-To` set to the requester.
 - Requester receives a short acknowledgement with reference number only (no matter details or attachments).
 - If the request is saved but SMTP fails, the booking remains in MongoDB with `officeEmailStatus: failed`. Retry from **Admin → Bookings → [request] → Retry office email**.
 
@@ -108,7 +108,7 @@ Admin routes are excluded from indexing via `robots.txt`.
 ## Verification checklist
 
 - [ ] `npm run seed:services` and `npm run create:admin` succeed
-- [ ] Submit a valid request on `/contact` → appears in admin with reference number
+- [ ] Submit a valid request on the homepage contact form → appears in admin with reference number
 - [ ] Invalid PDF / oversize file rejected by API
 - [ ] `/api/admin/documents` and admin pages return 401 when logged out
 - [ ] Publish a testimonial → visible on homepage; unpublish → section hidden when empty

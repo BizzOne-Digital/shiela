@@ -1,6 +1,7 @@
 /** Local marketing & admin imagery (from client assets) */
 export const IMAGES = {
-  heroBg: "/images/hero-background.jpg",
+  logoSs2: "/images/logo-ss2.png",
+  heroBg: "/images/hero-ss2.png",
   processServing: "/images/process-serving.jpg",
   courtFiling: "/images/court-filing.jpg",
   contactOffice: "/images/contact-office.jpg",

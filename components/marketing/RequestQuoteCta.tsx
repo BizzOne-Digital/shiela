@@ -24,7 +24,7 @@ export function RequestQuoteCta() {
                 </p>
               </div>
               <Link
-                href="/contact"
+                href="/#contact"
                 className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-hero-navy shadow-lg transition hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl active:translate-y-0 min-[480px]:w-auto min-[480px]:px-8"
               >
                 Request a Quote

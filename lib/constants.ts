@@ -4,7 +4,9 @@ export const BUSINESS = {
   phone: "905-213-7809",
   phoneHref: "tel:+19052137809",
   infoEmail: "info@angelonedocuments.com",
+  serviceRequestsEmail: "servicerequests@angelonedocuments.com",
   receptionEmail: "reception@angelonedocuments.com",
+  websiteUrl: "https://www.angelonedocuments.com",
   address: {
     line1: "27-1300 King Street East, Unit 247",
     city: "Oshawa",
@@ -84,19 +86,19 @@ export const ICON_KEYS = [
 
 export type IconKey = (typeof ICON_KEYS)[number];
 
-/** Header dropdown links */
+/** Footer / in-page service links (homepage sections) */
 export const NAV_SERVICES_MENU = [
-  { label: "All services", href: "/services" },
-  { label: "Process Serving", href: "/services#service-serve" },
-  { label: "Court Filing — In Person", href: "/services#service-filing" },
-  { label: "e-Filing", href: "/services#service-efile" },
-  { label: "Writ Searches", href: "/services#service-search" },
-  { label: "Occupancy Status Confirmations", href: "/services#service-occupancy" },
+  { label: "All services", href: "/#services" },
+  { label: "Process Serving", href: "/#service-serve" },
+  { label: "Court Filing — In Person", href: "/#service-filing" },
+  { label: "e-Filing", href: "/#service-efile" },
+  { label: "Writ Searches", href: "/#service-search" },
+  { label: "Occupancy Status Confirmations", href: "/#service-occupancy" },
 ] as const;
 
 export const NAV_WHO_MENU = [
-  { label: "Overview", href: "/who-we-help" },
-  { label: "Legal Professionals", href: "/who-we-help#who-legal" },
-  { label: "Small Businesses", href: "/who-we-help#who-business" },
-  { label: "Members of the Public", href: "/who-we-help#who-public" },
+  { label: "Overview", href: "/#who-we-help" },
+  { label: "Legal Professionals", href: "/#who-legal" },
+  { label: "Small Businesses", href: "/#who-business" },
+  { label: "Members of the Public", href: "/#who-public" },
 ] as const;

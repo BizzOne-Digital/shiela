@@ -10,6 +10,7 @@ import {
   MAX_PDF_BYTES,
   REQUESTER_TYPES,
   URGENCY_OPTIONS,
+  BUSINESS,
 } from "@/lib/constants";
 import { smallServicesGridClass } from "@/lib/services-display";
 
@@ -48,9 +49,11 @@ const initial: FormState = {
 export function ServiceRequestForm({
   services,
   preselectedServiceId,
+  embedded = false,
 }: {
   services: Service[];
   preselectedServiceId?: string;
+  embedded?: boolean;
 }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(() => ({
@@ -151,8 +154,9 @@ export function ServiceRequestForm({
           Reference: <strong>{success}</strong>
         </p>
         <p className="mt-4 text-sm text-ink/70">
-          We have saved your request. Our office will review your requirements and contact you.
-          Submitting does not confirm pricing, availability, or acceptance of service.
+          Thank you — a confirmation will be sent from {BUSINESS.receptionEmail}. Our team will review
+          your requirements and contact you, usually within one business day. Submitting does not confirm
+          pricing, availability, or acceptance of service.
         </p>
       </div>
     );
@@ -162,7 +166,13 @@ export function ServiceRequestForm({
   const stepShort = ["Details", "Service", "Review"];
 
   return (
-    <div className="min-w-0 rounded-2xl border border-pale-gray/80 bg-soft-white p-4 shadow-sm sm:p-6 md:p-8">
+    <div
+      className={
+        embedded
+          ? "min-w-0 rounded-2xl border border-pale-gray/60 bg-pale-blue/15 p-3 min-[400px]:p-4 sm:p-5"
+          : "min-w-0 rounded-2xl border border-pale-gray/80 bg-soft-white p-4 shadow-sm sm:p-6 md:p-8"
+      }
+    >
       <nav aria-label="Form progress" className="mb-6 sm:mb-8">
         <ol className="flex flex-col gap-2 min-[480px]:flex-row">
           {steps.map((label, i) => (
@@ -274,7 +284,7 @@ export function ServiceRequestForm({
                     return (
                       <label
                         key={s._id}
-                        className={`flex h-full min-h-[72px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 text-sm transition ${
+                        className={`flex h-full min-h-[72px] cursor-pointer flex-col items-start gap-2 rounded-xl border px-4 py-3.5 text-sm transition min-[480px]:flex-row min-[480px]:items-center min-[480px]:gap-3 ${
                           selected
                             ? "border-hero-navy bg-hero-sky/50 ring-1 ring-hero-navy/15"
                             : "border-pale-gray bg-white hover:border-hero-navy/25 hover:bg-[#fafbfc]"
@@ -296,7 +306,7 @@ export function ServiceRequestForm({
                         </span>
                         <span className="min-w-0 flex-1 font-medium leading-snug text-ink">{s.title}</span>
                         <span
-                          className={`ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border min-[480px]:ml-auto ${
                             selected ? "border-hero-navy bg-hero-navy text-white" : "border-pale-gray"
                           }`}
                           aria-hidden
@@ -512,14 +522,15 @@ function PdfUpload({
         </label>
         <p className="mt-3 text-xs text-ink/60">Drag and drop PDFs here. Max 10 MB combined.</p>
       </div>
-      <p className="mt-3 text-xs text-ink/70" role="note">
-        Don&apos;t want to upload? Email your documents to reception@angelonedocuments.com.
+      <p className="mt-3 break-words text-xs leading-relaxed text-ink/70" role="note">
+        PDF format only. Don&apos;t want to upload? Email documents to{" "}
+        <span className="break-all font-medium text-ink min-[400px]:break-normal">{BUSINESS.serviceRequestsEmail}</span>.
       </p>
       {files.length > 0 && (
         <ul className="mt-4 space-y-2 text-sm">
           {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center justify-between rounded-lg bg-pale-blue/40 px-3 py-2">
-              <span>{f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
+            <li key={`${f.name}-${i}`} className="flex items-start justify-between gap-2 rounded-lg bg-pale-blue/40 px-3 py-2">
+              <span className="min-w-0 break-all">{f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
               <button
                 type="button"
                 className="text-xs font-semibold text-accent"
@@ -550,9 +561,9 @@ function ReviewSummary({
   const names = services.filter((s) => form.serviceIds.includes(s._id)).map((s) => s.title);
   const urgency = URGENCY_OPTIONS.find((u) => u.value === form.urgency)?.label;
   return (
-    <div className="rounded-xl border border-pale-gray/70 bg-pale-blue/20 p-4 text-sm">
+    <div className="rounded-xl border border-pale-gray/70 bg-pale-blue/20 p-4 text-sm break-words">
       <h3 className="font-semibold text-ink">Review</h3>
-      <dl className="mt-3 space-y-1 text-ink/80">
+      <dl className="mt-3 space-y-2 text-ink/80">
         <div><dt className="inline font-medium">Name: </dt>{form.fullName}</div>
         <div><dt className="inline font-medium">Email: </dt>{form.email}</div>
         <div><dt className="inline font-medium">Services: </dt>{names.join(", ")}</div>

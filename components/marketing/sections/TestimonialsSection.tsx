@@ -16,7 +16,7 @@ export function TestimonialsSection({
         <div className="site-container-narrow">
           {showHeading ? (
             <RevealText>
-              <h2 className="font-display text-center text-3xl font-medium text-hero-navy">Testimonials</h2>
+              <h2 className="font-display text-center text-2xl font-medium text-hero-navy min-[400px]:text-3xl">Testimonials</h2>
             </RevealText>
           ) : null}
           <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 ${showHeading ? "mt-10" : ""}`}>

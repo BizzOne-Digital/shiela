@@ -33,7 +33,7 @@ export function HowItWorksSection({ showHeading = true }: { showHeading?: boolea
             ))}
           </ol>
           <p className="mt-10 text-center text-sm text-hero-muted">
-            <Link href="/contact" className="font-semibold text-hero-navy underline-offset-2 hover:underline">
+            <Link href="/#contact" className="font-semibold text-hero-navy underline-offset-2 hover:underline">
               Start a service request
             </Link>
           </p>

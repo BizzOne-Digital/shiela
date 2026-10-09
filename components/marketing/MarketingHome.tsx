@@ -1,20 +1,26 @@
 import { Hero } from "@/components/home/Hero";
 import { HomeContactSection } from "@/components/marketing/home/HomeContactSection";
-import { HomeServicesLine } from "@/components/marketing/home/HomeServicesLine";
-import { RequestQuoteCta } from "@/components/marketing/RequestQuoteCta";
-import { WhoWeHelpSection } from "@/components/marketing/sections/WhoWeHelpSection";
-import { TrustStrip } from "@/components/marketing/TrustStrip";
+import { HomeOverviewSections } from "@/components/marketing/overview/HomeOverviewSections";
 import type { MarketingService } from "@/lib/marketing-data";
 
-export function MarketingHome({ services }: { services: MarketingService[] }) {
+export function MarketingHome({
+  services,
+  preselectedServiceId,
+}: {
+  services: MarketingService[];
+  preselectedServiceId?: string;
+}) {
+  const formServices = services.map((s) => ({
+    _id: s._id,
+    title: s.title,
+    iconKey: s.iconKey,
+  }));
+
   return (
     <>
       <Hero />
-      <TrustStrip />
-      <HomeServicesLine services={services} />
-      <WhoWeHelpSection viewAllHref="/who-we-help" />
-      <HomeContactSection />
-      <RequestQuoteCta />
+      <HomeOverviewSections />
+      <HomeContactSection services={formServices} preselectedServiceId={preselectedServiceId} />
     </>
   );
 }

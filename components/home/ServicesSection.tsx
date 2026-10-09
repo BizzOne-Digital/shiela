@@ -54,7 +54,7 @@ export function ServicesSection({ services }: { services: Service[] }) {
                         <h3 className="font-display text-xl font-medium text-ink">{service.title}</h3>
                         <p className="mt-2 text-sm leading-relaxed text-ink/75">{service.description}</p>
                         <Link
-                          href={`/contact?service=${service._id}`}
+                          href={`/?service=${service._id}#contact`}
                           className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-ink"
                         >
                           Request This Service

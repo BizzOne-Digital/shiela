@@ -1,15 +1,7 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site-metadata";
 
-const paths = [
-  "",
-  "/services",
-  "/who-we-help",
-  "/how-it-works",
-  "/service-area",
-  "/testimonials",
-  "/contact",
-];
+const paths = ["", "/service-area", "/testimonials"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteUrl();
@@ -18,6 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${base}${path}`,
     lastModified: now,
     changeFrequency: path === "" ? "weekly" : "monthly",
-    priority: path === "" ? 1 : path === "/contact" ? 0.9 : 0.8 - i * 0.02,
+    priority: path === "" ? 1 : 0.8 - i * 0.05,
   }));
 }

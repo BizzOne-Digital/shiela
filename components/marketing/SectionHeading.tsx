@@ -29,7 +29,7 @@ export function SectionHeading({
           {title}
         </h1>
       ) : (
-        <h2 className="text-balance-safe font-display mt-4 text-2xl font-medium text-hero-navy min-[400px]:text-3xl md:text-[2.5rem] md:leading-[1.15]">
+        <h2 className="text-balance-safe font-display mt-4 text-[1.35rem] font-medium leading-snug text-hero-navy min-[360px]:text-2xl min-[400px]:text-3xl md:text-[2.5rem] md:leading-[1.15]">
           {title}
         </h2>
       )}

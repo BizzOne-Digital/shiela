@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/brand/LogoMark";
+import { LogoWordmark } from "@/components/brand/LogoWordmark";
 import { BUSINESS, NAV_SERVICES_MENU } from "@/lib/constants";
 
 const exploreLinks = [
   { label: "Home", href: "/" },
-  { label: "Who We Help", href: "/who-we-help" },
-  { label: "How It Works", href: "/how-it-works" },
   { label: "Service Area", href: "/service-area" },
   { label: "Testimonials", href: "/testimonials" },
-  { label: "Contact", href: "/contact" },
 ];
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
@@ -28,7 +25,7 @@ function PinIcon() {
 
 export function MarketingFooter() {
   const year = new Date().getFullYear();
-  const serviceLinks = NAV_SERVICES_MENU.filter((item) => item.href !== "/services").slice(0, 5);
+  const serviceLinks = NAV_SERVICES_MENU.filter((item) => item.href !== "/#services").slice(0, 5);
 
   return (
     <footer className="relative overflow-hidden bg-hero-navy text-white">
@@ -44,14 +41,8 @@ export function MarketingFooter() {
       <div className="site-container safe-bottom relative pt-14 pb-8 md:pt-16 md:pb-10">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-8 xl:gap-12">
           <div className="lg:col-span-4">
-            <Link href="/" className="inline-flex items-center gap-3 text-white" aria-label="Angel One Documents — Home">
-              <LogoMark className="h-10 w-10 shrink-0 text-white" />
-              <span className="flex flex-col leading-[1.05]">
-                <span className="font-display text-[1.2rem] font-medium tracking-tight">ANGEL ONE</span>
-                <span className="font-display mt-1 text-[0.55rem] font-medium tracking-[0.26em] text-white/75">
-                  DOCUMENTS
-                </span>
-              </span>
+            <Link href="/" className="inline-flex max-w-full min-w-0 text-white" aria-label="Angel One Documents — Home">
+              <LogoWordmark variant="light" compact className="max-[380px]:scale-[0.92] max-[380px]:origin-left" />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70">{BUSINESS.description}</p>
             <p className="mt-4 text-xs font-medium tracking-wide text-white/45 uppercase">{BUSINESS.locationLabel}</p>
@@ -78,7 +69,7 @@ export function MarketingFooter() {
               <ul className="mt-4 space-y-2.5">
                 <li>
                   <Link
-                    href="/services"
+                    href="/#services"
                     className="text-sm font-medium text-white transition hover:underline hover:underline-offset-4"
                   >
                     All services
@@ -123,7 +114,7 @@ export function MarketingFooter() {
                         <path d="M3 8l9 6 9-6" strokeWidth="1.4" />
                       </svg>
                     </span>
-                    <span className="min-w-0 whitespace-nowrap text-[13px] min-[400px]:text-sm">
+                    <span className="min-w-0 break-all text-[13px] min-[400px]:text-sm sm:break-normal">
                       {BUSINESS.infoEmail}
                     </span>
                   </a>
@@ -134,7 +125,7 @@ export function MarketingFooter() {
                 </li>
               </ul>
               <Link
-                href="/contact"
+                href="/#contact"
                 className="mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-hero-navy transition hover:bg-white/95"
               >
                 Request a Quote

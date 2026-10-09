@@ -5,7 +5,12 @@ import { localBusinessJsonLd } from "@/lib/site-metadata";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ service?: string }>;
+}) {
+  const params = await searchParams;
   const services = await getActiveServices();
   const serviceItems = mapMarketingServices(services);
 
@@ -15,7 +20,7 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd()) }}
       />
-      <MarketingHome services={serviceItems} />
+      <MarketingHome services={serviceItems} preselectedServiceId={params.service} />
     </>
   );
 }
