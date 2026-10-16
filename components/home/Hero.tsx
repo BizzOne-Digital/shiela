@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Stagger, StaggerItem } from "@/components/motion/Reveal";
+import { LogoWordmark } from "@/components/brand/LogoWordmark";
 import { IMAGES } from "@/lib/images";
 
 function ArrowRight() {
@@ -18,6 +19,11 @@ export function Hero() {
     <section className="overflow-x-clip bg-white lg:grid lg:min-h-[min(78vh,760px)] lg:grid-cols-2">
       <div className="flex min-w-0 flex-col justify-center bg-white px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))] sm:px-8 sm:py-12 lg:px-12 lg:py-16 xl:px-16">
         <Stagger immediate className="mx-auto w-full max-w-[560px] lg:mx-0 lg:max-w-[540px]">
+          <StaggerItem>
+            <Link href="/" className="mb-6 inline-flex max-w-full min-[400px]:mb-8" aria-label="Angel One Documents — Home">
+              <LogoWordmark variant="dark" />
+            </Link>
+          </StaggerItem>
           <StaggerItem>
             <p className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-pale-gray/80 bg-pale-blue/50 px-3 py-1.5 text-[10px] font-sans font-semibold tracking-[0.14em] text-hero-muted uppercase min-[400px]:px-4 min-[400px]:text-[11px] min-[400px]:tracking-[0.2em]">
               <span className="relative flex h-2 w-2" aria-hidden>
@@ -41,17 +47,18 @@ export function Hero() {
           <StaggerItem>
             <div className="mt-8 flex w-full flex-col gap-3 min-[480px]:mt-9 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:gap-4">
               <Link
-                href="/#contact"
+                href="/#service-request-form"
                 className="btn-primary w-full min-[480px]:w-auto shadow-[0_12px_32px_-12px_rgba(10,31,68,0.55)]"
               >
                 Submit a Service Request
                 <ArrowRight />
               </Link>
               <Link
-                href="/#services"
+                href="/#service-request-form"
                 className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-pale-gray bg-white px-5 py-3 text-[14px] font-medium text-hero-navy shadow-sm transition hover:border-hero-navy/25 hover:bg-pale-blue/30 min-[480px]:w-auto min-[480px]:px-7 min-[480px]:py-3.5"
               >
-                Explore Services
+                Online service request
+                <ArrowRight />
               </Link>
             </div>
           </StaggerItem>

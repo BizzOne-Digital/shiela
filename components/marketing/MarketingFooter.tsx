@@ -42,7 +42,7 @@ export function MarketingFooter() {
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-8 xl:gap-12">
           <div className="lg:col-span-4">
             <Link href="/" className="inline-flex max-w-full min-w-0 text-white" aria-label="Angel One Documents — Home">
-              <LogoWordmark variant="light" compact className="max-[380px]:scale-[0.92] max-[380px]:origin-left" />
+              <LogoWordmark compact className="max-[380px]:origin-left" />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70">{BUSINESS.description}</p>
             <p className="mt-4 text-xs font-medium tracking-wide text-white/45 uppercase">{BUSINESS.locationLabel}</p>

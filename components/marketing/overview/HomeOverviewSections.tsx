@@ -3,7 +3,13 @@ import { SectionHeading } from "@/components/marketing/SectionHeading";
 import { ServiceTierTable } from "@/components/marketing/overview/ServiceTierTable";
 import { Reveal, RevealSection, RevealText } from "@/components/motion/Reveal";
 import { BUSINESS } from "@/lib/constants";
-import { PROCESS_SERVING_TIERS, WHY_CHOOSE_ITEMS } from "@/lib/overview-content";
+import {
+  CORE_SERVICES,
+  CORE_SERVICES_INTRO,
+  PROCESS_SERVING_TIERS,
+  WHO_WE_SERVE,
+  WHY_CHOOSE_ITEMS,
+} from "@/lib/overview-content";
 
 function ProseBlock({ children }: { children: React.ReactNode }) {
   return (
@@ -84,53 +90,66 @@ export function HomeOverviewSections() {
         <RevealSection>
           <div className="site-container-narrow">
             <RevealText>
-              <SectionHeading eyebrow="2. Core services" title="Process serving & court filing" />
+              <SectionHeading
+                eyebrow="2. Core services"
+                title="Core services"
+                description={CORE_SERVICES_INTRO}
+              />
             </RevealText>
 
             <Reveal direction="up" distance={40} delay={0.05}>
               <div className={`mt-10 md:mt-12 ${cardClass}`}>
-                <h3 className="font-display text-xl font-medium text-hero-navy md:text-2xl">
-                  A. Process Serving
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-hero-muted md:text-[15px]">
-                  Our team of experienced process servers handle delivery of critical legal paperwork with
-                  precision and compliance within the Rules of Civil Procedure.
-                </p>
-                <BulletList
-                  items={[
-                    "Legal Documents Served: Civil, Family Law, Child Protection, Small Claims and Estates.",
-                    "Proof & Verification: Detailed Affidavits / Proof of Service provided promptly upon completion to confirm date, time, address and party served.",
-                  ]}
-                />
-                <ServiceTierTable
-                  caption="Process serving turnaround tiers"
-                  rows={PROCESS_SERVING_TIERS}
-                />
+                <div className="space-y-8">
+                  {CORE_SERVICES.map((service) => (
+                    <div key={service.title} className="border-b border-pale-gray/40 pb-8 last:border-b-0 last:pb-0">
+                      <h3 className="font-display text-lg font-medium text-hero-navy min-[400px]:text-xl md:text-2xl">
+                        {service.title}
+                      </h3>
+                      <p className="mt-3 text-sm leading-relaxed text-hero-muted md:text-[15px]">
+                        {service.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-10 border-t border-pale-gray/50 pt-8">
+                  <h3 className="font-display text-lg font-medium text-hero-navy md:text-xl">Turnaround times</h3>
+                  <ServiceTierTable
+                    caption="Process serving turnaround tiers"
+                    rows={PROCESS_SERVING_TIERS}
+                  />
+                </div>
+
+                <div className="mt-10 flex flex-wrap justify-center gap-3 border-t border-pale-gray/50 pt-8">
+                  <Link href="/#service-request-form" className="btn-primary min-h-[44px] px-6">
+                    Request service
+                  </Link>
+                  <a
+                    href={BUSINESS.phoneHref}
+                    className="inline-flex min-h-[44px] items-center rounded-full border border-pale-gray bg-pale-blue/50 px-6 text-sm font-medium text-hero-navy hover:bg-pale-blue"
+                  >
+                    {BUSINESS.phone}
+                  </a>
+                </div>
               </div>
             </Reveal>
 
             <Reveal direction="up" distance={40} delay={0.1}>
               <div className={`mt-6 md:mt-8 ${cardClass}`}>
-                <h3 className="font-display text-xl font-medium text-hero-navy md:text-2xl">
-                  B. Court Filing Services
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-hero-muted md:text-[15px]">
-                  Ensure your court documents are properly submitted ahead of strict legal deadlines.
-                </p>
-                <BulletList
-                  items={[
-                    "eFiling & In-Person Filing: Fast submission across electronic filing portals and physical court clerk counters.",
-                    "Document Retrieval & Records Management: Swift retrieval of court records, case files, certified copies and Sheriff Office Writ Searches.",
-                  ]}
-                />
-                <div className="mt-8 flex flex-wrap justify-center gap-3">
-                  <Link href="/#contact" className="btn-primary min-h-[44px] px-6">
-                    Request service
-                  </Link>
-                  <a href={BUSINESS.phoneHref} className="inline-flex min-h-[44px] items-center rounded-full border border-pale-gray bg-pale-blue/50 px-6 text-sm font-medium text-hero-navy hover:bg-pale-blue">
-                    {BUSINESS.phone}
-                  </a>
-                </div>
+                <h3 className="font-display text-xl font-medium text-hero-navy md:text-2xl">Who we serve</h3>
+                <ul className="mt-6 space-y-6">
+                  {WHO_WE_SERVE.map((item) => (
+                    <li key={item.title} className="flex gap-3 text-left">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-hero-navy/70" aria-hidden />
+                      <div>
+                        <p className="text-sm font-semibold text-hero-navy md:text-[15px]">{item.title}</p>
+                        <p className="mt-1.5 text-sm leading-relaxed text-hero-muted md:text-[15px]">
+                          {item.description}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </Reveal>
           </div>

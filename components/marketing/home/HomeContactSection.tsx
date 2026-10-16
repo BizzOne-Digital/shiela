@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ServiceRequestForm } from "@/components/contact/ServiceRequestForm";
 import { SectionHeading } from "@/components/marketing/SectionHeading";
 import { Reveal, RevealSection, RevealText } from "@/components/motion/Reveal";
@@ -33,20 +32,6 @@ export function HomeContactSection({
             />
           </RevealText>
 
-          <Reveal direction="up" distance={32} delay={0.05}>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
-              <Link href="#service-request-form" className="btn-primary min-h-[44px] px-8 shadow-[0_12px_32px_-12px_rgba(10,31,68,0.4)]">
-                Request service online
-              </Link>
-              <a
-                href={BUSINESS.phoneHref}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-pale-gray bg-pale-blue/40 px-8 py-3 text-sm font-medium text-hero-navy transition hover:border-hero-navy/25"
-              >
-                {BUSINESS.phone}
-              </a>
-            </div>
-          </Reveal>
-
           <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(260px,320px)_1fr] lg:items-start">
             <Reveal direction="up" distance={40}>
               <ul className="space-y-4 rounded-2xl border border-pale-gray/60 bg-pale-blue/25 p-6 md:p-8">
@@ -74,28 +59,9 @@ export function HomeContactSection({
                     <p className="text-xs font-semibold text-hero-muted uppercase tracking-wide">Email</p>
                     <a
                       href={`mailto:${BUSINESS.infoEmail}`}
-                      className="break-all text-sm text-hero-navy hover:underline min-[400px]:break-normal"
+                      className="break-all text-sm font-medium text-hero-navy hover:underline min-[400px]:break-normal"
                     >
                       {BUSINESS.infoEmail}
-                    </a>
-                  </div>
-                </li>
-                <li className="flex items-center gap-3">
-                  <ContactIcon>
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-                      <path d="M4 6h16v12H4z" strokeWidth="1.4" />
-                      <path d="M8 10h8M8 14h5" strokeWidth="1.3" strokeLinecap="round" />
-                    </svg>
-                  </ContactIcon>
-                  <div>
-                    <p className="text-xs font-semibold text-hero-muted uppercase tracking-wide">Web</p>
-                    <a
-                      href={BUSINESS.websiteUrl}
-                      className="text-sm text-hero-navy hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      www.angelonedocuments.com
                     </a>
                   </div>
                 </li>
@@ -108,7 +74,7 @@ export function HomeContactSection({
                   </ContactIcon>
                   <div>
                     <p className="text-xs font-semibold text-hero-muted uppercase tracking-wide">Mailing address</p>
-                    <span className="text-sm leading-relaxed text-hero-muted">{BUSINESS.address.full}</span>
+                    <p className="text-sm font-medium leading-relaxed text-hero-navy">{BUSINESS.address.full}</p>
                   </div>
                 </li>
               </ul>
@@ -118,6 +84,10 @@ export function HomeContactSection({
               <div id="service-request-form" className="scroll-mt-28 min-w-0">
                 <h3 className="font-display text-lg font-medium text-hero-navy md:text-xl">Online service request</h3>
                 <p className="mt-2 text-sm leading-relaxed text-hero-muted">
+                  Please fill in the form below with as much detail as possible. For your safety, do not include any
+                  sensitive or personal information (such as passwords, financial data or identification numbers).
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-hero-muted">
                   Upload PDF documents only. You will receive a thank-you email from{" "}
                   <a
                     href={`mailto:${BUSINESS.receptionEmail}`}
