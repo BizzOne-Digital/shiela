@@ -1,6 +1,4 @@
-import { Hero } from "@/components/home/Hero";
-import { HomeContactSection } from "@/components/marketing/home/HomeContactSection";
-import { HomeOverviewSections } from "@/components/marketing/overview/HomeOverviewSections";
+import { Ss1OnePage } from "@/components/marketing/ss1/Ss1OnePage";
 import type { MarketingService } from "@/lib/marketing-data";
 
 export function MarketingHome({
@@ -16,11 +14,5 @@ export function MarketingHome({
     iconKey: s.iconKey,
   }));
 
-  return (
-    <>
-      <Hero />
-      <HomeOverviewSections />
-      <HomeContactSection services={formServices} preselectedServiceId={preselectedServiceId} />
-    </>
-  );
+  return <Ss1OnePage services={formServices} preselectedServiceId={preselectedServiceId} />;
 }
