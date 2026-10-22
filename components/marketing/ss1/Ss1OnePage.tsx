@@ -31,9 +31,9 @@ export function Ss1OnePage({
   preselectedServiceId?: string;
 }) {
   return (
-    <div id="top" className="bg-white text-hero-navy">
-      <div className="site-container-narrow mx-auto max-w-3xl pb-16">
-        <header className="border-b border-pale-gray/70 py-8 text-center md:py-10">
+    <div id="top" className="w-full bg-white text-hero-navy">
+      <header className="w-full border-b border-pale-gray/70">
+        <div className="site-container py-8 text-center md:py-10">
           <Link href="/" className="inline-flex justify-center" aria-label="Angel One Documents — Home">
             <Image
               src={IMAGES.logoBrand}
@@ -49,13 +49,15 @@ export function Ss1OnePage({
             <span className="text-pale-gray" aria-hidden>|</span>
             <Link href="/#contact-us" className="hover:underline">Contact</Link>
           </nav>
-        </header>
+        </div>
+      </header>
 
-        <section className="border-b border-pale-gray/70 bg-pale-blue/60 px-4 py-10 text-center md:px-8 md:py-12">
+      <section className="w-full border-b border-pale-gray/70 bg-pale-blue/60">
+        <div className="site-container py-10 text-center md:py-12">
           <h1 className="font-display text-2xl font-medium text-hero-navy md:text-3xl">
             Process Serving &amp; Courthouse Services
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-hero-navy/85 md:text-[15px]">
+          <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-hero-navy/85 md:text-[15px]">
             Reliable service of legal documents for legal professionals and self-represented individuals.
             Submit your documents and deadline. We&apos;ll confirm pricing and timing within one business day.
           </p>
@@ -65,9 +67,11 @@ export function Ss1OnePage({
           >
             Submit a service request
           </Link>
-        </section>
+        </div>
+      </section>
 
-        <section className="border-b border-pale-gray/70 py-10 md:py-12">
+      <section className="w-full border-b border-pale-gray/70">
+        <div className="site-container py-10 md:py-12">
           <h2 className="text-lg font-bold text-hero-navy md:text-xl">Who we serve</h2>
           <div className="mt-6 space-y-0">
             {WHO_SERVE_SS1.map((block, index) => (
@@ -84,11 +88,13 @@ export function Ss1OnePage({
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="service-request-form" className="scroll-mt-6 border-b border-pale-gray/70 py-10 md:py-12">
+      <section id="service-request-form" className="scroll-mt-6 w-full border-b border-pale-gray/70">
+        <div className="site-container py-10 md:py-12">
           <h2 className="text-lg font-bold text-hero-navy md:text-xl">Service request form</h2>
-          <p className="mt-3 text-sm leading-relaxed text-hero-muted">
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-hero-muted">
             Please fill in the form below with as much detail as possible. For your safety, do not include any
             sensitive or personal information (such as passwords, financial data or identification numbers).
           </p>
@@ -96,9 +102,11 @@ export function Ss1OnePage({
           <div className="mt-6 min-w-0">
             <ServiceRequestForm services={services} preselectedServiceId={preselectedServiceId} embedded />
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="contact-us" className="scroll-mt-6 py-10 md:py-12">
+      <section id="contact-us" className="scroll-mt-6 w-full">
+        <div className="site-container pb-16 pt-10 md:pb-20 md:pt-12">
           <h2 className="text-lg font-bold text-hero-navy md:text-xl">Contact us</h2>
           <dl className="mt-6 space-y-5 text-sm md:text-[15px]">
             <div>
@@ -143,8 +151,8 @@ export function Ss1OnePage({
               <dd className="mt-1 text-hero-navy/90">Within 1 business day — rush available</dd>
             </div>
           </dl>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
