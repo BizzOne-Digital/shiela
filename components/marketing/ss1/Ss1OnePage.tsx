@@ -1,8 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ServiceRequestForm } from "@/components/contact/ServiceRequestForm";
 import { BUSINESS } from "@/lib/constants";
-import { IMAGES } from "@/lib/images";
 
 const WHO_SERVE_SS1 = [
   {
@@ -33,18 +31,14 @@ export function Ss1OnePage({
   return (
     <div id="top" className="w-full bg-white text-hero-navy">
       <header className="w-full border-b border-pale-gray/70">
-        <div className="site-container py-8 text-center md:py-10">
-          <Link href="/" className="inline-flex justify-center" aria-label="Angel One Documents — Home">
-            <Image
-              src={IMAGES.logoBrand}
-              alt="Angel One Documents"
-              width={640}
-              height={160}
-              priority
-              className="h-[4.5rem] w-auto max-w-[min(92vw,520px)] rounded-sm object-contain min-[400px]:h-[5.25rem] md:h-28 md:max-w-[560px]"
-            />
+        <div className="site-container py-6 text-left md:py-8">
+          <Link
+            href="/"
+            className="text-xl font-semibold text-hero-navy hover:underline md:text-2xl"
+          >
+            {BUSINESS.shortName}
           </Link>
-          <nav className="mt-5 flex items-center justify-center gap-2 text-sm text-hero-navy/85" aria-label="Page">
+          <nav className="mt-3 flex items-center justify-start gap-2 text-sm text-hero-navy/85" aria-label="Page">
             <Link href="/#top" className="hover:underline">Home</Link>
             <span className="text-pale-gray" aria-hidden>|</span>
             <Link href="/#contact-us" className="hover:underline">Contact</Link>
