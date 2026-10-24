@@ -1,50 +1,55 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { nanoid } from "nanoid";
-import { ServiceIcon } from "@/components/icons/ServiceIcon";
-import {
-  ADD_ON_OPTIONS,
-  MATTER_DETAILS_MAX,
-  MAX_PDF_BYTES,
-  REQUESTER_TYPES,
-  URGENCY_OPTIONS,
-  BUSINESS,
-} from "@/lib/constants";
-import { smallServicesGridClass } from "@/lib/services-display";
+import { BUSINESS, MATTER_DETAILS_MAX, MAX_PDF_BYTES } from "@/lib/constants";
 
 type Service = { _id: string; title: string; iconKey?: string };
 
 type FormState = {
-  requesterType: string;
   fullName: string;
-  company: string;
   email: string;
   phone: string;
+  serveFileBy: string;
   serviceIds: string[];
+  styleOfCause: string;
+  courtCourthouse: string;
+  documentsDescription: string;
+  personToServe: string;
   serviceAddress: string;
-  serviceCity: string;
-  urgency: string;
-  courtDeadline: string;
-  addOns: string[];
-  matterDetails: string;
+  instructions: string;
 };
 
 const initial: FormState = {
-  requesterType: "",
   fullName: "",
-  company: "",
   email: "",
   phone: "",
+  serveFileBy: "",
   serviceIds: [],
+  styleOfCause: "",
+  courtCourthouse: "",
+  documentsDescription: "",
+  personToServe: "",
   serviceAddress: "",
-  serviceCity: "",
-  urgency: "standard",
-  courtDeadline: "",
-  addOns: [],
-  matterDetails: "",
+  instructions: "",
 };
+
+function buildMatterDetails(form: FormState): string {
+  const parts: string[] = [];
+  if (form.styleOfCause.trim()) {
+    parts.push(`Style of cause & court file number:\n${form.styleOfCause.trim()}`);
+  }
+  if (form.documentsDescription.trim()) {
+    parts.push(`Documents to serve / file:\n${form.documentsDescription.trim()}`);
+  }
+  if (form.personToServe.trim()) {
+    parts.push(`Person / corporation to be served:\n${form.personToServe.trim()}`);
+  }
+  if (form.instructions.trim()) {
+    parts.push(`Instructions & description:\n${form.instructions.trim()}`);
+  }
+  return parts.join("\n\n");
+}
 
 export function ServiceRequestForm({
   services,
@@ -55,7 +60,6 @@ export function ServiceRequestForm({
   preselectedServiceId?: string;
   embedded?: boolean;
 }) {
-  const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(() => ({
     ...initial,
     serviceIds: preselectedServiceId ? [preselectedServiceId] : [],
@@ -66,43 +70,28 @@ export function ServiceRequestForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const idempotencyKey = useMemo(() => nanoid(24), []);
-  const reduce = useReducedMotion();
 
   const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
   const update = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
-  const toggleService = (id: string) => {
-    setForm((f) => ({
-      ...f,
-      serviceIds: f.serviceIds.includes(id)
-        ? f.serviceIds.filter((x) => x !== id)
-        : [...f.serviceIds, id],
-    }));
-  };
-
-  const validateStep = (s: number): boolean => {
+  const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (s === 0) {
-      if (!form.requesterType) e.requesterType = "Please select an option.";
-      if (!form.fullName.trim()) e.fullName = "Required.";
-      if (!form.email.trim()) e.email = "Required.";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email.";
-      if (!form.phone.trim()) e.phone = "Required.";
+    if (!form.fullName.trim()) e.fullName = "Required.";
+    if (!form.email.trim()) e.email = "Required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email.";
+    if (!form.serveFileBy) e.serveFileBy = "Required.";
+    if (!form.serviceIds.length) e.serviceType = "Please select a service type.";
+    if (!form.serviceAddress.trim()) e.serviceAddress = "Required.";
+    if (!form.courtCourthouse.trim()) e.courtCourthouse = "Required.";
+    const matterDetails = buildMatterDetails(form);
+    if (!matterDetails.trim() || matterDetails.length < 10) {
+      e.instructions = "Please add instructions or other matter details (at least 10 characters).";
     }
-    if (s === 1) {
-      if (!form.serviceIds.length) e.serviceIds = "Select at least one service.";
-      if (!form.serviceAddress.trim()) e.serviceAddress = "Required.";
-      if (!form.serviceCity.trim()) e.serviceCity = "Required.";
-      if (!form.urgency) e.urgency = "Required.";
-      if (!form.matterDetails.trim() || form.matterDetails.length < 10)
-        e.matterDetails = "Please provide at least 10 characters.";
-      if (form.matterDetails.length > MATTER_DETAILS_MAX)
-        e.matterDetails = `Maximum ${MATTER_DETAILS_MAX} characters.`;
+    if (matterDetails.length > MATTER_DETAILS_MAX) {
+      e.instructions = `Combined details must be under ${MATTER_DETAILS_MAX} characters.`;
     }
-    if (s === 2) {
-      if (totalBytes > MAX_PDF_BYTES) e.files = "Combined PDFs must be under 10 MB.";
-    }
+    if (totalBytes > MAX_PDF_BYTES) e.files = "Combined PDFs must be under 20 MB.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -114,19 +103,22 @@ export function ServiceRequestForm({
   }, []);
 
   const submit = async () => {
-    if (!validateStep(0) || !validateStep(1) || !validateStep(2)) {
-      setStep(0);
-      return;
-    }
+    if (!validate()) return;
     setSubmitting(true);
     setSubmitError(null);
+    const matterDetails = buildMatterDetails(form);
     const body = new FormData();
-    Object.entries(form).forEach(([k, v]) => {
-      if (k === "serviceIds" || k === "addOns") return;
-      body.append(k, String(v));
-    });
+    body.append("requesterType", "Member of the Public");
+    body.append("fullName", form.fullName.trim());
+    body.append("company", "");
+    body.append("email", form.email.trim());
+    body.append("phone", form.phone.trim());
     form.serviceIds.forEach((id) => body.append("serviceIds", id));
-    form.addOns.forEach((a) => body.append("addOns", a));
+    body.append("serviceAddress", form.serviceAddress.trim());
+    body.append("serviceCity", form.courtCourthouse.trim());
+    body.append("urgency", "standard");
+    body.append("courtDeadline", form.serveFileBy);
+    body.append("matterDetails", matterDetails);
     body.append("idempotencyKey", idempotencyKey);
     body.append("website", "");
     files.forEach((f) => body.append("documents", f));
@@ -148,275 +140,136 @@ export function ServiceRequestForm({
 
   if (success) {
     return (
-      <div className="rounded-2xl border border-pale-gray bg-pale-blue/30 p-8 text-center">
-        <h2 className="font-display text-2xl text-ink">Request received</h2>
-        <p className="mt-4 text-sm text-ink/75">
+      <div className="rounded-xl border border-pale-gray/70 bg-white p-8 text-center">
+        <h2 className="text-xl font-bold text-hero-navy">Request received</h2>
+        <p className="mt-4 text-sm text-hero-navy/80">
           Reference: <strong>{success}</strong>
         </p>
-        <p className="mt-4 text-sm text-ink/70">
-          Thank you — a confirmation will be sent from {BUSINESS.receptionEmail}. Our team will review
-          your requirements and contact you, usually within one business day. Submitting does not confirm
-          pricing, availability, or acceptance of service.
+        <p className="mt-4 text-sm text-hero-muted">
+          Thank you — a confirmation will be sent from {BUSINESS.receptionEmail}. Our team will review your
+          request and contact you, usually within one business day.
         </p>
       </div>
     );
   }
 
-  const steps = ["Your Details", "Service Details", "Documents & Review"];
-  const stepShort = ["Details", "Service", "Review"];
+  const shellClass = embedded
+    ? "min-w-0 rounded-xl border border-pale-gray/70 bg-white p-5 md:p-6"
+    : "min-w-0 rounded-2xl border border-pale-gray/80 bg-soft-white p-4 shadow-sm sm:p-6 md:p-8";
 
   return (
-    <div
-      className={
-        embedded
-          ? "min-w-0 rounded-2xl border border-pale-gray/60 bg-pale-blue/15 p-3 min-[400px]:p-4 sm:p-5"
-          : "min-w-0 rounded-2xl border border-pale-gray/80 bg-soft-white p-4 shadow-sm sm:p-6 md:p-8"
-      }
-    >
-      <nav aria-label="Form progress" className="mb-6 sm:mb-8">
-        <ol className="flex flex-col gap-2 min-[480px]:flex-row">
-          {steps.map((label, i) => (
-            <li key={label} className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={() => i < step && setStep(i)}
-                className={`min-h-[44px] w-full rounded-lg px-2 py-2.5 text-left text-xs font-medium leading-snug min-[480px]:text-center md:text-sm ${
-                  i === step
-                    ? "bg-ink text-soft-white"
-                    : i < step
-                      ? "bg-pale-blue text-ink"
-                      : "bg-pale-blue/40 text-ink/50"
-                }`}
-                disabled={i > step}
-              >
-                <span className="min-[480px]:hidden">{i + 1}. {stepShort[i]}</span>
-                <span className="hidden min-[480px]:inline">{i + 1}. {label}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </nav>
+    <div className={shellClass}>
+      <div className="space-y-5">
+        <Field label="Full name" error={errors.fullName}>
+          <input
+            className="input"
+            value={form.fullName}
+            onChange={(e) => update({ fullName: e.target.value })}
+            autoComplete="name"
+          />
+        </Field>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={reduce ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {step === 0 && (
-            <div className="space-y-5">
-              <fieldset>
-                <legend className="text-sm font-semibold text-ink">I am a:</legend>
-                <div className="mt-3 grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
-                  {REQUESTER_TYPES.map((t) => (
-                    <label
-                      key={t}
-                      className={`flex min-h-[44px] cursor-pointer items-center rounded-xl border px-4 py-3 text-sm ${
-                        form.requesterType === t
-                          ? "border-ink bg-pale-blue"
-                          : "border-pale-gray"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="requesterType"
-                        className="sr-only"
-                        checked={form.requesterType === t}
-                        onChange={() => update({ requesterType: t })}
-                      />
-                      {t}
-                    </label>
-                  ))}
-                </div>
-                {errors.requesterType && (
-                  <p className="mt-1 text-xs text-red-700">{errors.requesterType}</p>
-                )}
-              </fieldset>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Full Name *" error={errors.fullName}>
-                  <input
-                    className="input"
-                    value={form.fullName}
-                    onChange={(e) => update({ fullName: e.target.value })}
-                    required
-                  />
-                </Field>
-                <Field label="Firm or Company" error={errors.company}>
-                  <input
-                    className="input"
-                    value={form.company}
-                    onChange={(e) => update({ company: e.target.value })}
-                  />
-                </Field>
-                <Field label="Email *" error={errors.email}>
-                  <input
-                    type="email"
-                    className="input"
-                    value={form.email}
-                    onChange={(e) => update({ email: e.target.value })}
-                    required
-                  />
-                </Field>
-                <Field label="Phone *" error={errors.phone}>
-                  <input
-                    type="tel"
-                    className="input"
-                    value={form.phone}
-                    onChange={(e) => update({ phone: e.target.value })}
-                    required
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
+        <Field label="Email" error={errors.email}>
+          <input
+            type="email"
+            className="input"
+            value={form.email}
+            onChange={(e) => update({ email: e.target.value })}
+            autoComplete="email"
+          />
+        </Field>
 
-          {step === 1 && (
-            <div className="space-y-5">
-              <fieldset>
-                <legend className="text-sm font-semibold text-ink">Services needed *</legend>
-                <div
-                  className={`mt-3 grid items-stretch gap-3 ${smallServicesGridClass(services.length)}`}
-                >
-                  {services.map((s) => {
-                    const selected = form.serviceIds.includes(s._id);
-                    return (
-                      <label
-                        key={s._id}
-                        className={`flex h-full min-h-[72px] cursor-pointer flex-col items-start gap-2 rounded-xl border px-4 py-3.5 text-sm transition min-[480px]:flex-row min-[480px]:items-center min-[480px]:gap-3 ${
-                          selected
-                            ? "border-hero-navy bg-hero-sky/50 ring-1 ring-hero-navy/15"
-                            : "border-pale-gray bg-white hover:border-hero-navy/25 hover:bg-[#fafbfc]"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={selected}
-                          onChange={() => toggleService(s._id)}
-                        />
-                        <span
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                            selected ? "bg-white text-hero-navy" : "bg-hero-sky/80 text-hero-navy"
-                          }`}
-                          aria-hidden
-                        >
-                          <ServiceIcon iconKey={s.iconKey ?? "document"} className="h-5 w-5" />
-                        </span>
-                        <span className="min-w-0 flex-1 font-medium leading-snug text-ink">{s.title}</span>
-                        <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border min-[480px]:ml-auto ${
-                            selected ? "border-hero-navy bg-hero-navy text-white" : "border-pale-gray"
-                          }`}
-                          aria-hidden
-                        >
-                          {selected ? (
-                            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
-                              <path
-                                d="M2.5 6l2.5 2.5L9.5 4"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          ) : null}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-                {errors.serviceIds && (
-                  <p className="mt-1 text-xs text-red-700">{errors.serviceIds}</p>
-                )}
-              </fieldset>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Service address *" error={errors.serviceAddress}>
-                  <input
-                    className="input"
-                    value={form.serviceAddress}
-                    onChange={(e) => update({ serviceAddress: e.target.value })}
-                  />
-                </Field>
-                <Field label="City *" error={errors.serviceCity}>
-                  <input
-                    className="input"
-                    value={form.serviceCity}
-                    onChange={(e) => update({ serviceCity: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <Field label="Urgency *" error={errors.urgency}>
-                <select
-                  className="input"
-                  value={form.urgency}
-                  onChange={(e) => update({ urgency: e.target.value })}
-                >
-                  {URGENCY_OPTIONS.map((u) => (
-                    <option key={u.value} value={u.value}>{u.label}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-ink/60">
-                  Requested timing is subject to office confirmation.
-                </p>
-              </Field>
-              <Field label="Court deadline (optional)">
-                <input
-                  type="date"
-                  className="input"
-                  value={form.courtDeadline}
-                  onChange={(e) => update({ courtDeadline: e.target.value })}
-                />
-              </Field>
-              <fieldset>
-                <legend className="text-sm font-semibold text-ink">Add-on services (optional)</legend>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {ADD_ON_OPTIONS.map((a) => (
-                    <label key={a} className="flex items-center gap-2 rounded-full border border-pale-gray px-3 py-1.5 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={form.addOns.includes(a)}
-                        onChange={() =>
-                          update({
-                            addOns: form.addOns.includes(a)
-                              ? form.addOns.filter((x) => x !== a)
-                              : [...form.addOns, a],
-                          })
-                        }
-                      />
-                      {a}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <Field label="Details of your matter *" error={errors.matterDetails}>
-                <textarea
-                  className="input min-h-[120px]"
-                  maxLength={MATTER_DETAILS_MAX}
-                  value={form.matterDetails}
-                  onChange={(e) => update({ matterDetails: e.target.value })}
-                />
-                <p className="text-right text-xs text-ink/50">
-                  {form.matterDetails.length}/{MATTER_DETAILS_MAX}
-                </p>
-              </Field>
-            </div>
-          )}
+        <Field label="Phone (optional)" error={errors.phone}>
+          <input
+            type="tel"
+            className="input"
+            value={form.phone}
+            onChange={(e) => update({ phone: e.target.value })}
+            autoComplete="tel"
+          />
+        </Field>
 
-          {step === 2 && (
-            <div className="space-y-6">
-              <PdfUpload files={files} setFiles={setFiles} onFiles={onFiles} totalBytes={totalBytes} />
-              {errors.files && <p className="text-xs text-red-700">{errors.files}</p>}
-              <ReviewSummary form={form} services={services} files={files} />
-              <p className="text-xs text-ink/60">
-                By submitting, you agree that the information provided will be used to respond to your
-                service request. Formal privacy policies are available upon request from our office.
-              </p>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+        <Field label="Serve / file by" error={errors.serveFileBy}>
+          <input
+            type="date"
+            className="input"
+            value={form.serveFileBy}
+            onChange={(e) => update({ serveFileBy: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Service type" error={errors.serviceType}>
+          <select
+            className="input"
+            value={form.serviceIds[0] ?? ""}
+            onChange={(e) => update({ serviceIds: e.target.value ? [e.target.value] : [] })}
+          >
+            <option value="">Select...</option>
+            {services.map((s) => (
+              <option key={s._id} value={s._id}>{s.title}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Style of cause & court file number" error={errors.styleOfCause}>
+          <input
+            className="input"
+            value={form.styleOfCause}
+            onChange={(e) => update({ styleOfCause: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Court / courthouse" error={errors.courtCourthouse}>
+          <input
+            className="input"
+            value={form.courtCourthouse}
+            onChange={(e) => update({ courtCourthouse: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Documents to serve / file" error={errors.documentsDescription}>
+          <input
+            className="input"
+            value={form.documentsDescription}
+            onChange={(e) => update({ documentsDescription: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Person / corporation to be served" error={errors.personToServe}>
+          <input
+            className="input"
+            value={form.personToServe}
+            onChange={(e) => update({ personToServe: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Service address" error={errors.serviceAddress}>
+          <input
+            className="input"
+            value={form.serviceAddress}
+            onChange={(e) => update({ serviceAddress: e.target.value })}
+            autoComplete="street-address"
+          />
+        </Field>
+
+        <Field label="Instructions & description" error={errors.instructions}>
+          <textarea
+            className="input min-h-[140px] resize-y"
+            placeholder="Description of recipient, best times, gate codes, filing instructions..."
+            maxLength={MATTER_DETAILS_MAX}
+            value={form.instructions}
+            onChange={(e) => update({ instructions: e.target.value })}
+          />
+        </Field>
+
+        <PdfUpload
+          files={files}
+          setFiles={setFiles}
+          onFiles={onFiles}
+          totalBytes={totalBytes}
+          error={errors.files}
+        />
+      </div>
 
       {submitError && (
         <p className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">
@@ -424,36 +277,19 @@ export function ServiceRequestForm({
         </p>
       )}
 
-      <div className="mt-8 flex flex-col-reverse gap-3 min-[480px]:flex-row min-[480px]:justify-between min-[480px]:gap-4">
-        <button
-          type="button"
-          className="min-h-[44px] w-full rounded-full border border-pale-gray px-5 py-2.5 text-sm font-medium disabled:opacity-40 min-[480px]:w-auto"
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0 || submitting}
-        >
-          Back
-        </button>
-        {step < 2 ? (
-          <button
-            type="button"
-            className="min-h-[44px] w-full rounded-full bg-ink px-6 py-2.5 text-sm font-semibold text-soft-white min-[480px]:w-auto"
-            onClick={() => {
-              if (validateStep(step)) setStep((s) => s + 1);
-            }}
-          >
-            Continue
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="min-h-[44px] w-full rounded-full bg-ink px-6 py-2.5 text-sm font-semibold text-soft-white disabled:opacity-60 min-[480px]:w-auto"
-            onClick={submit}
-            disabled={submitting}
-          >
-            {submitting ? "Submitting…" : "Submit request"}
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#5D8AB4] px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-[#4f7aa3] disabled:opacity-60"
+        onClick={submit}
+        disabled={submitting}
+      >
+        {submitting ? "Sending…" : "Send service request"}
+      </button>
+
+      <p className="mt-4 text-sm leading-relaxed text-hero-muted">
+        Submitting opens your email app with the details filled in. Your email app cannot receive files from this
+        page automatically, so please attach the PDFs you selected there before sending.
+      </p>
     </div>
   );
 }
@@ -468,9 +304,9 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block text-sm">
-      <span className="font-medium text-ink">{label}</span>
-      <div className="mt-1.5">{children}</div>
+    <label className="block">
+      <span className="text-sm font-bold text-[#35546C]">{label}</span>
+      <div className="mt-2">{children}</div>
       {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
     </label>
   );
@@ -481,19 +317,24 @@ function PdfUpload({
   setFiles,
   onFiles,
   totalBytes,
+  error,
 }: {
   files: File[];
   setFiles: React.Dispatch<React.SetStateAction<File[]>>;
   onFiles: (f: FileList | null) => void;
   totalBytes: number;
+  error?: string;
 }) {
   const [drag, setDrag] = useState(false);
+  const maxMb = MAX_PDF_BYTES / 1024 / 1024;
+
   return (
     <div>
-      <p className="text-sm font-semibold text-ink">PDF documents (optional)</p>
+      <p className="text-sm font-bold text-[#35546C]">Attach PDF documents (optional)</p>
+      <p className="mt-1 text-sm text-hero-muted">PDF files only, up to {maxMb} MB in total.</p>
       <div
-        className={`mt-3 rounded-xl border-2 border-dashed p-6 text-center transition ${
-          drag ? "border-accent bg-pale-blue" : "border-pale-gray bg-pale-blue/20"
+        className={`mt-3 rounded-xl border-2 border-dashed p-5 text-center transition ${
+          drag ? "border-[#5D8AB4] bg-[#E3F0FB]/60" : "border-pale-gray/80 bg-pale-blue/15"
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -516,61 +357,36 @@ function PdfUpload({
         />
         <label
           htmlFor="pdf-upload"
-          className="inline-flex cursor-pointer rounded-full bg-ink px-5 py-2 text-sm font-semibold text-soft-white"
+          className="inline-flex cursor-pointer rounded-xl bg-[#5D8AB4] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4f7aa3]"
         >
           Choose PDF files
         </label>
-        <p className="mt-3 text-xs text-ink/60">Drag and drop PDFs here. Max 10 MB combined.</p>
       </div>
-      <p className="mt-3 break-words text-xs leading-relaxed text-ink/70" role="note">
-        PDF format only. Don&apos;t want to upload? Email documents to{" "}
-        <span className="break-all font-medium text-ink min-[400px]:break-normal">{BUSINESS.serviceRequestsEmail}</span>.
-      </p>
+      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
       {files.length > 0 && (
         <ul className="mt-4 space-y-2 text-sm">
           {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-start justify-between gap-2 rounded-lg bg-pale-blue/40 px-3 py-2">
-              <span className="min-w-0 break-all">{f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
+            <li
+              key={`${f.name}-${i}`}
+              className="flex items-start justify-between gap-2 rounded-lg bg-pale-blue/30 px-3 py-2"
+            >
+              <span className="min-w-0 break-all">
+                {f.name} ({(f.size / 1024).toFixed(1)} KB)
+              </span>
               <button
                 type="button"
-                className="text-xs font-semibold text-accent"
+                className="shrink-0 text-xs font-semibold text-[#5D8AB4]"
                 onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
               >
                 Remove
               </button>
             </li>
           ))}
-          <li className="text-xs font-medium text-ink/70">
-            Total: {(totalBytes / 1024 / 1024).toFixed(2)} MB / 10 MB
+          <li className="text-xs font-medium text-hero-muted">
+            Total: {(totalBytes / 1024 / 1024).toFixed(2)} MB / {maxMb} MB
           </li>
         </ul>
       )}
-    </div>
-  );
-}
-
-function ReviewSummary({
-  form,
-  services,
-  files,
-}: {
-  form: FormState;
-  services: Service[];
-  files: File[];
-}) {
-  const names = services.filter((s) => form.serviceIds.includes(s._id)).map((s) => s.title);
-  const urgency = URGENCY_OPTIONS.find((u) => u.value === form.urgency)?.label;
-  return (
-    <div className="rounded-xl border border-pale-gray/70 bg-pale-blue/20 p-4 text-sm break-words">
-      <h3 className="font-semibold text-ink">Review</h3>
-      <dl className="mt-3 space-y-2 text-ink/80">
-        <div><dt className="inline font-medium">Name: </dt>{form.fullName}</div>
-        <div><dt className="inline font-medium">Email: </dt>{form.email}</div>
-        <div><dt className="inline font-medium">Services: </dt>{names.join(", ")}</div>
-        <div><dt className="inline font-medium">Location: </dt>{form.serviceAddress}, {form.serviceCity}</div>
-        <div><dt className="inline font-medium">Urgency: </dt>{urgency}</div>
-        <div><dt className="inline font-medium">Files: </dt>{files.length ? files.map((f) => f.name).join(", ") : "None"}</div>
-      </dl>
     </div>
   );
 }

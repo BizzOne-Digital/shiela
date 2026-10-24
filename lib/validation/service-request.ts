@@ -14,7 +14,7 @@ export const serviceRequestBodySchema = z.object({
   fullName: z.string().min(1, "Full name is required").max(200),
   company: z.string().max(200).optional().or(z.literal("")),
   email: z.string().email("Valid email is required"),
-  phone: z.string().min(7, "Phone is required").max(30),
+  phone: z.string().max(30).optional().or(z.literal("")),
   serviceIds: z.array(z.string().min(1)).min(1, "Select at least one service"),
   serviceAddress: z.string().min(1, "Address is required").max(300),
   serviceCity: z.string().min(1, "City is required").max(100),
@@ -50,7 +50,7 @@ export function validatePdfFiles(
     total += f.size;
   }
   if (total > MAX_PDF_BYTES) {
-    return { ok: false, message: "Combined PDF size must not exceed 10 MB." };
+    return { ok: false, message: "Combined PDF size must not exceed 20 MB." };
   }
   return { ok: true };
 }

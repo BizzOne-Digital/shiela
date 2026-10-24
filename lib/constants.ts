@@ -70,7 +70,7 @@ export const SPECIAL_OFFERS = [
   "Inquire about our high-volume partner pricing for ongoing Civil, Personal Injury, Family and Small Claims matters.",
 ] as const;
 
-export const MAX_PDF_BYTES = 10 * 1024 * 1024;
+export const MAX_PDF_BYTES = 20 * 1024 * 1024;
 export const MATTER_DETAILS_MAX = 5000;
 
 export const ICON_KEYS = [

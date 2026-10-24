@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       fullName: parsed.data.fullName,
       company: parsed.data.company || undefined,
       email: parsed.data.email,
-      phone: parsed.data.phone,
+      phone: parsed.data.phone?.trim() ? parsed.data.phone.trim() : "Not provided",
       services: serviceSnapshots,
       serviceAddress: parsed.data.serviceAddress,
       serviceCity: parsed.data.serviceCity,
