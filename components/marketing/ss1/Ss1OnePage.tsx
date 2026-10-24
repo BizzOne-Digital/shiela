@@ -6,15 +6,15 @@ const WHO_SERVE_SS1 = [
   {
     title: "Legal professionals",
     paragraphs: [
-      "A trusted partner for lawyers and paralegals who need fast, accurate and well-documented service.",
-      "We handle process serving, court filings and related courthouse work so your team can stay focused on the file — with clear updates and affidavits ready to file.",
+      "Lawyers, paralegals, law clerks and law offices rely on us to keep files moving. We handle service of documents, court filings, document retrieval and courthouse runs, so your team can stay focused on the matter itself.",
+      "Prompt turnaround, careful handling of every document, and a completed affidavit of service for your records.",
     ],
   },
   {
     title: "Self-represented individuals",
     paragraphs: [
-      "Plain-language guidance on what we can do, and a straightforward process from start to finish.",
-      "Whether you need documents served or filed, we explain the steps in clear terms and keep you informed along the way.",
+      "Representing yourself? We take care of the practical steps: delivering your documents to the other party, filing at the courthouse and picking up copies, so each step is completed properly and on time.",
+      "Clear communication from start to finish. We provide document services only and cannot give legal advice.",
     ],
   },
 ] as const;
@@ -78,11 +78,11 @@ export function Ss1OnePage({
       <section className="w-full border-b border-pale-gray/70">
         <div className="site-container py-10 md:py-12">
           <h2 className="text-center text-lg font-bold text-hero-navy md:text-xl">Who we serve</h2>
-          <div className="mt-6 space-y-0">
-            {WHO_SERVE_SS1.map((block, index) => (
+          <div className="mt-6 space-y-4">
+            {WHO_SERVE_SS1.map((block) => (
               <div
                 key={block.title}
-                className={`border border-pale-gray/70 bg-white p-5 md:p-6 ${index > 0 ? "border-t-0" : ""}`}
+                className="rounded-xl border border-pale-gray/70 bg-white p-5 md:p-6"
               >
                 <h3 className="font-bold text-hero-navy">{block.title}</h3>
                 {block.paragraphs.map((p) => (
@@ -99,11 +99,6 @@ export function Ss1OnePage({
       <section id="service-request-form" className="scroll-mt-6 w-full border-b border-pale-gray/70">
         <div className="site-container py-10 md:py-12">
           <h2 className="text-lg font-bold text-hero-navy md:text-xl">Service request form</h2>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-hero-muted">
-            Please fill in the form below with as much detail as possible. For your safety, do not include any
-            sensitive or personal information (such as passwords, financial data or identification numbers).
-          </p>
-          <p className="mt-2 text-sm text-hero-muted">Upload PDF documents only.</p>
           <div className="mt-6 min-w-0">
             <ServiceRequestForm services={services} preselectedServiceId={preselectedServiceId} embedded />
           </div>
