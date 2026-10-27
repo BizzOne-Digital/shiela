@@ -13,7 +13,6 @@ export type BookingDetailData = {
   company?: string;
   email: string;
   phone: string;
-  services: { title: string }[];
   serviceAddress: string;
   serviceCity: string;
   urgency: string;
@@ -70,8 +69,7 @@ export function BookingDetail({ booking }: { booking: BookingDetailData }) {
           <p className="text-sm">{booking.phone}</p>
         </InfoCard>
         <InfoCard title="Service">
-          <p className="text-sm">{booking.services.map((s) => s.title).join(", ")}</p>
-          <p className="mt-2 text-sm">{booking.serviceAddress}, {booking.serviceCity}</p>
+          <p className="text-sm">{booking.serviceAddress}, {booking.serviceCity}</p>
           <p className="mt-2 text-sm">Urgency: {urgencyLabel}</p>
           {booking.courtDeadline && <p className="text-sm">Court deadline: {booking.courtDeadline}</p>}
           {booking.addOns.length > 0 && (

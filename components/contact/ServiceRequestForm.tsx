@@ -4,14 +4,11 @@ import { useCallback, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
 import { BUSINESS, MATTER_DETAILS_MAX, MAX_PDF_BYTES } from "@/lib/constants";
 
-type Service = { _id: string; title: string; iconKey?: string };
-
 type FormState = {
   fullName: string;
   email: string;
   phone: string;
   serveFileBy: string;
-  serviceIds: string[];
   styleOfCause: string;
   courtCourthouse: string;
   documentsDescription: string;
@@ -25,7 +22,6 @@ const initial: FormState = {
   email: "",
   phone: "",
   serveFileBy: "",
-  serviceIds: [],
   styleOfCause: "",
   courtCourthouse: "",
   documentsDescription: "",
@@ -51,19 +47,8 @@ function buildMatterDetails(form: FormState): string {
   return parts.join("\n\n");
 }
 
-export function ServiceRequestForm({
-  services,
-  preselectedServiceId,
-  embedded = false,
-}: {
-  services: Service[];
-  preselectedServiceId?: string;
-  embedded?: boolean;
-}) {
-  const [form, setForm] = useState<FormState>(() => ({
-    ...initial,
-    serviceIds: preselectedServiceId ? [preselectedServiceId] : [],
-  }));
+export function ServiceRequestForm({ embedded = false }: { embedded?: boolean }) {
+  const [form, setForm] = useState<FormState>(initial);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +66,6 @@ export function ServiceRequestForm({
     if (!form.email.trim()) e.email = "Required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email.";
     if (!form.serveFileBy) e.serveFileBy = "Required.";
-    if (!form.serviceIds.length) e.serviceType = "Please select a service type.";
     if (!form.serviceAddress.trim()) e.serviceAddress = "Required.";
     if (!form.courtCourthouse.trim()) e.courtCourthouse = "Required.";
     const matterDetails = buildMatterDetails(form);
@@ -113,7 +97,6 @@ export function ServiceRequestForm({
     body.append("company", "");
     body.append("email", form.email.trim());
     body.append("phone", form.phone.trim());
-    form.serviceIds.forEach((id) => body.append("serviceIds", id));
     body.append("serviceAddress", form.serviceAddress.trim());
     body.append("serviceCity", form.courtCourthouse.trim());
     body.append("urgency", "standard");
@@ -196,19 +179,6 @@ export function ServiceRequestForm({
             value={form.serveFileBy}
             onChange={(e) => update({ serveFileBy: e.target.value })}
           />
-        </Field>
-
-        <Field label="Service type" error={errors.serviceType}>
-          <select
-            className="input"
-            value={form.serviceIds[0] ?? ""}
-            onChange={(e) => update({ serviceIds: e.target.value ? [e.target.value] : [] })}
-          >
-            <option value="">Select...</option>
-            {services.map((s) => (
-              <option key={s._id} value={s._id}>{s.title}</option>
-            ))}
-          </select>
         </Field>
 
         <Field label="Style of cause & court file number" error={errors.styleOfCause}>

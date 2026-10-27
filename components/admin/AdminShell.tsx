@@ -9,7 +9,7 @@ import { IMAGES } from "@/lib/images";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: "home", exact: true },
-  { href: "/admin/services", label: "Services", icon: "services" },
+  { href: "/admin/content", label: "Page Content", icon: "content" },
   { href: "/admin/bookings", label: "Bookings", icon: "bookings" },
   { href: "/admin/testimonials", label: "Testimonials", icon: "quotes" },
 ];
@@ -23,7 +23,7 @@ function NavIcon({ type }: { type: string }) {
           <path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-5v-6H10v6H5a1 1 0 01-1-1v-9.5z" />
         </svg>
       );
-    case "services":
+    case "content":
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M8 4h12v16H4V8h4z" />

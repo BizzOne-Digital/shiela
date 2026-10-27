@@ -49,7 +49,6 @@ export async function sendOfficeNotification(
     );
   }
 
-  const services = request.services.map((s) => escapeHtml(s.title)).join(", ");
   const html = `
     <h2>New service request — ${escapeHtml(request.referenceNumber)}</h2>
     <p><strong>Status:</strong> ${escapeHtml(request.status)}</p>
@@ -63,7 +62,6 @@ export async function sendOfficeNotification(
     </ul>
     <h3>Service details</h3>
     <ul>
-      <li><strong>Services:</strong> ${services}</li>
       <li><strong>Location:</strong> ${escapeHtml(request.serviceAddress)}, ${escapeHtml(request.serviceCity)}</li>
       <li><strong>Urgency:</strong> ${escapeHtml(urgencyLabel(request.urgency))}</li>
       <li><strong>Court deadline:</strong> ${request.courtDeadline ? escapeHtml(request.courtDeadline.toISOString().slice(0, 10)) : "—"}</li>

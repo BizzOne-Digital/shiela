@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "seed:services": "tsx scripts/seed-services.ts",
     "create:admin": "tsx scripts/create-admin.ts"
   },
   "dependencies": {

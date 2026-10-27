@@ -26,7 +26,6 @@ export default async function BookingDetailPage({
     company: r.company ?? undefined,
     email: r.email,
     phone: r.phone,
-    services: r.services.map((s) => ({ title: s.title })),
     serviceAddress: r.serviceAddress,
     serviceCity: r.serviceCity,
     urgency: r.urgency,

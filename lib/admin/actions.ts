@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { connectMongo } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/auth/session";
-import { Service } from "@/models/Service";
+import { SiteContent } from "@/models/SiteContent";
 import { Testimonial } from "@/models/Testimonial";
 import { ServiceRequest } from "@/models/ServiceRequest";
-import { ICON_KEYS, REQUEST_STATUSES, type IconKey } from "@/lib/constants";
-import { slugify } from "@/lib/utils";
+import { REQUEST_STATUSES } from "@/lib/constants";
 import { sendOfficeNotification } from "@/lib/email";
 import { getStorage } from "@/lib/storage";
 import { z } from "zod";
@@ -16,66 +15,6 @@ async function guard() {
   const session = await requireAdmin();
   if (!session) throw new Error("Unauthorized");
   return session;
-}
-
-export async function createService(data: {
-  title: string;
-  description: string;
-  iconKey: string;
-  displayOrder: number;
-  active: boolean;
-}) {
-  await guard();
-  await connectMongo();
-  if (!ICON_KEYS.includes(data.iconKey as IconKey)) throw new Error("Invalid icon");
-  await Service.create({
-    title: data.title,
-    slug: slugify(data.title),
-    description: data.description,
-    iconKey: data.iconKey as IconKey,
-    displayOrder: data.displayOrder,
-    active: data.active,
-  });
-  revalidatePath("/");
-  revalidatePath("/admin/services");
-}
-
-export async function updateService(
-  id: string,
-  data: {
-    title: string;
-    description: string;
-    iconKey: string;
-    displayOrder: number;
-    active: boolean;
-  },
-) {
-  await guard();
-  await connectMongo();
-  if (!ICON_KEYS.includes(data.iconKey as IconKey)) throw new Error("Invalid icon");
-  await Service.findByIdAndUpdate(id, {
-    title: data.title,
-    slug: slugify(data.title),
-    description: data.description,
-    iconKey: data.iconKey as IconKey,
-    displayOrder: data.displayOrder,
-    active: data.active,
-  });
-  revalidatePath("/");
-  revalidatePath("/admin/services");
-}
-
-export async function deleteService(id: string) {
-  await guard();
-  await connectMongo();
-  const inUse = await ServiceRequest.exists({ "services.serviceId": id });
-  if (inUse) {
-    await Service.findByIdAndUpdate(id, { active: false });
-  } else {
-    await Service.findByIdAndDelete(id);
-  }
-  revalidatePath("/");
-  revalidatePath("/admin/services");
 }
 
 export async function updateBooking(
@@ -151,4 +90,36 @@ export async function deleteTestimonial(id: string) {
   await Testimonial.findByIdAndDelete(id);
   revalidatePath("/");
   revalidatePath("/admin/testimonials");
+}
+
+const siteContentSchema = z.object({
+  brandName: z.string().trim().min(1).max(100),
+  heroTitle: z.string().trim().min(1).max(200),
+  heroText: z.string().trim().max(2000),
+  ctaLabel: z.string().trim().min(1).max(80),
+  whoHeading: z.string().trim().max(100),
+  whoBlocks: z
+    .array(z.object({ title: z.string().trim().max(150), body: z.string().trim().max(3000) }))
+    .max(10),
+  formHeading: z.string().trim().min(1).max(100),
+  contactHeading: z.string().trim().min(1).max(100),
+  email: z.string().trim().email(),
+  phone: z.string().trim().min(1).max(40),
+  hours: z.string().trim().max(150),
+  address: z.string().trim().min(1).max(300),
+  serviceArea: z.string().trim().max(200),
+  responseTime: z.string().trim().max(200),
+});
+
+export async function saveSiteContent(data: z.infer<typeof siteContentSchema>) {
+  await guard();
+  const parsed = siteContentSchema.parse(data);
+  await connectMongo();
+  await SiteContent.findOneAndUpdate(
+    { key: "main" },
+    { $set: { ...parsed, whoBlocks: parsed.whoBlocks.filter((b) => b.title || b.body) } },
+    { upsert: true },
+  );
+  revalidatePath("/");
+  revalidatePath("/admin/content");
 }

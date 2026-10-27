@@ -15,7 +15,6 @@ export const serviceRequestBodySchema = z.object({
   company: z.string().max(200).optional().or(z.literal("")),
   email: z.string().email("Valid email is required"),
   phone: z.string().max(30).optional().or(z.literal("")),
-  serviceIds: z.array(z.string().min(1)).min(1, "Select at least one service"),
   serviceAddress: z.string().min(1, "Address is required").max(300),
   serviceCity: z.string().min(1, "City is required").max(100),
   urgency: z.enum(urgencyValues),

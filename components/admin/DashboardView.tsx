@@ -7,13 +7,12 @@ type Row = {
   id: string;
   referenceNumber: string;
   fullName: string;
-  services: string;
   urgency: string;
   status: string;
   createdAt: string;
 };
 
-const statIcons = ["📄", "➕", "⏱", "✓", "📚", "💬"];
+const statIcons = ["📄", "➕", "⏱", "✓", "💬"];
 
 export function DashboardView({
   stats,
@@ -28,7 +27,7 @@ export function DashboardView({
     <>
       <AdminPageHeader
         title="Dashboard"
-        description="Manage your services and service requests."
+        description="Manage your page content and service requests."
       />
 
       <div className="mb-8 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-sm">
@@ -42,7 +41,7 @@ export function DashboardView({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         {stats.map((s, i) => (
           <div
             key={s.label}
@@ -66,7 +65,6 @@ export function DashboardView({
                 <tr>
                   <th className="px-6 py-3">Reference</th>
                   <th className="px-4 py-3">Client</th>
-                  <th className="px-4 py-3">Service</th>
                   <th className="px-4 py-3">Urgency</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Submitted</th>
@@ -76,7 +74,7 @@ export function DashboardView({
               <tbody>
                 {recent.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-hero-muted">
+                    <td colSpan={6} className="px-6 py-10 text-center text-hero-muted">
                       No requests yet.
                     </td>
                   </tr>
@@ -85,7 +83,6 @@ export function DashboardView({
                     <tr key={r.id} className="border-t border-black/[0.04]">
                       <td className="px-6 py-3 font-medium">{r.referenceNumber}</td>
                       <td className="px-4 py-3">{r.fullName}</td>
-                      <td className="max-w-[140px] truncate px-4 py-3">{r.services}</td>
                       <td className="px-4 py-3">
                         <StatusPill value={r.urgency} kind="urgency" />
                       </td>
@@ -135,10 +132,10 @@ export function DashboardView({
           <div className="rounded-2xl border border-black/[0.06] bg-white p-5 shadow-sm">
             <h3 className="font-display text-lg text-hero-navy">Quick Actions</h3>
             <Link
-              href="/admin/services"
+              href="/admin/content"
               className="mt-4 flex items-center justify-between rounded-xl bg-hero-navy px-4 py-3 text-sm font-medium text-white"
             >
-              Add Service <span>→</span>
+              Edit Page Content <span>→</span>
             </Link>
             <Link
               href="/admin/bookings"

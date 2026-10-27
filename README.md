@@ -25,11 +25,10 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
    - `OFFICE_EMAIL` (defaults to servicerequests@angelonedocuments.com)
    - SMTP variables when you are ready to send email
 
-3. Install and seed services:
+3. Install dependencies:
 
    ```bash
    npm install
-   npm run seed:services
    ```
 
 4. Create the first admin (no public registration):
@@ -66,17 +65,14 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
 |-------|---------|
 | `/admin/login` | Sign in |
 | `/admin` | Dashboard counts and recent requests |
-| `/admin/services` | Manage services shown on the site and form |
+| `/admin/content` | Edit the text of the one-page website (hero, who we serve, contact details) |
 | `/admin/bookings` | Search, filter, and manage service requests |
 | `/admin/testimonials` | Add/edit testimonials (unpublished by default) |
-
-Historical bookings keep service **title snapshots**; deactivating or deleting a service does not alter past requests.
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run seed:services` | Idempotent seed of the five default services |
 | `npm run create:admin` | Create first admin user |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
@@ -87,7 +83,6 @@ Historical bookings keep service **title snapshots**; deactivating or deleting a
 1. Set all production environment variables on your host (see `.env.example`). **Use only the host’s env UI** — do not rely on a different `MONGODB_URI` in your shell than the one the app reads.
 2. Use MongoDB Atlas (or managed MongoDB). Run once against **the same** `MONGODB_URI` the app uses:
    ```bash
-   npm run seed:services
    npm run create:admin -- admin@yourdomain.com "long-secure-password" --reset
    ```
 3. Set `STORAGE_DRIVER=s3` with a private bucket for PDFs.
@@ -101,13 +96,13 @@ Historical bookings keep service **title snapshots**; deactivating or deleting a
    npm run start
    ```
 
-Dev-only helpers (`/api/auth/seed-admin`, `/api/auth/seed-services`, `/api/auth/db-check`) return **404** in production.
+Dev-only helpers (`/api/auth/seed-admin`, `/api/auth/db-check`) return **404** in production.
 
 Admin routes are excluded from indexing via `robots.txt`.
 
 ## Verification checklist
 
-- [ ] `npm run seed:services` and `npm run create:admin` succeed
+- [ ] `npm run create:admin` succeeds
 - [ ] Submit a valid request on the homepage contact form → appears in admin with reference number
 - [ ] Invalid PDF / oversize file rejected by API
 - [ ] `/api/admin/documents` and admin pages return 401 when logged out

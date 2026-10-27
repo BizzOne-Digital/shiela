@@ -13,14 +13,6 @@ const DocumentMetaSchema = new Schema(
   { _id: false },
 );
 
-const ServiceSnapshotSchema = new Schema(
-  {
-    serviceId: { type: Schema.Types.ObjectId, required: true },
-    title: { type: String, required: true },
-  },
-  { _id: false },
-);
-
 const ServiceRequestSchema = new Schema(
   {
     referenceNumber: { type: String, required: true, unique: true },
@@ -30,7 +22,6 @@ const ServiceRequestSchema = new Schema(
     company: { type: String, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
     phone: { type: String, required: true, trim: true },
-    services: { type: [ServiceSnapshotSchema], required: true },
     serviceAddress: { type: String, required: true, trim: true },
     serviceCity: { type: String, required: true, trim: true },
     urgency: { type: String, enum: urgencyValues, required: true },
@@ -58,7 +49,6 @@ const ServiceRequestSchema = new Schema(
 
 ServiceRequestSchema.index({ referenceNumber: 1 });
 ServiceRequestSchema.index({ status: 1, createdAt: -1 });
-ServiceRequestSchema.index({ "services.serviceId": 1 });
 ServiceRequestSchema.index({ urgency: 1 });
 ServiceRequestSchema.index({ createdAt: -1 });
 

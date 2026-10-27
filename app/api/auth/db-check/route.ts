@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { connectMongo } from "@/lib/mongodb";
 import { Admin } from "@/models/Admin";
-import { Service } from "@/models/Service";
 
 export const runtime = "nodejs";
 
@@ -14,14 +13,10 @@ export async function GET() {
 
   try {
     await connectMongo();
-    const [adminCount, serviceCount] = await Promise.all([
-      Admin.countDocuments(),
-      Service.countDocuments(),
-    ]);
+    const adminCount = await Admin.countDocuments();
     return NextResponse.json({
       mongoConfigured: Boolean(process.env.MONGODB_URI),
       adminCount,
-      serviceCount,
       database: mongoose.connection.db?.databaseName ?? null,
     });
   } catch (e) {

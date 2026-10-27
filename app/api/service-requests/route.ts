@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectMongo } from "@/lib/mongodb";
-import { Service } from "@/models/Service";
 import { ServiceRequest } from "@/models/ServiceRequest";
 import {
   serviceRequestBodySchema,
@@ -34,7 +33,6 @@ export async function POST(req: NextRequest) {
     company: String(formData.get("company") ?? ""),
     email: String(formData.get("email") ?? ""),
     phone: String(formData.get("phone") ?? ""),
-    serviceIds: formData.getAll("serviceIds").map(String),
     serviceAddress: String(formData.get("serviceAddress") ?? ""),
     serviceCity: String(formData.get("serviceCity") ?? ""),
     urgency: String(formData.get("urgency") ?? ""),
@@ -66,14 +64,6 @@ export async function POST(req: NextRequest) {
       referenceNumber: existing.referenceNumber,
       duplicate: true,
     });
-  }
-
-  const services = await Service.find({
-    _id: { $in: parsed.data.serviceIds },
-    active: true,
-  });
-  if (services.length !== parsed.data.serviceIds.length) {
-    return NextResponse.json({ error: "One or more selected services are invalid." }, { status: 400 });
   }
 
   const fileEntries = formData.getAll("documents");
@@ -130,11 +120,6 @@ export async function POST(req: NextRequest) {
     if (!Number.isNaN(d.getTime())) courtDeadline = d;
   }
 
-  const serviceSnapshots = services.map((s) => ({
-    serviceId: s._id,
-    title: s.title,
-  }));
-
   try {
     const request = await ServiceRequest.create({
       referenceNumber,
@@ -144,7 +129,6 @@ export async function POST(req: NextRequest) {
       company: parsed.data.company || undefined,
       email: parsed.data.email,
       phone: parsed.data.phone?.trim() ? parsed.data.phone.trim() : "Not provided",
-      services: serviceSnapshots,
       serviceAddress: parsed.data.serviceAddress,
       serviceCity: parsed.data.serviceCity,
       urgency: parsed.data.urgency as "standard" | "priority" | "rush",

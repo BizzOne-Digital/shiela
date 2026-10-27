@@ -12,7 +12,6 @@ export type BookingListItem = {
   fullName: string;
   email: string;
   requesterType: string;
-  services: string;
   urgency: string;
   status: string;
   createdAt: string;
@@ -53,7 +52,7 @@ export function BookingsWorkspace({
       return (
         b.referenceNumber.toLowerCase().includes(term) ||
         b.fullName.toLowerCase().includes(term) ||
-        b.services.toLowerCase().includes(term)
+        b.email.toLowerCase().includes(term)
       );
     });
   }, [bookings, q, status]);
@@ -95,7 +94,7 @@ export function BookingsWorkspace({
           <div className="border-b border-black/[0.05] p-4 space-y-3">
             <input
               type="search"
-              placeholder="Search by request ID, client name, or service..."
+              placeholder="Search by request ID, client name, or email..."
               className="input"
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -164,7 +163,6 @@ export function BookingsWorkspace({
                 <a href={`mailto:${selected.email}`} className="text-accent">{selected.email}</a>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div><dt className="text-hero-muted">Service</dt><dd>{selected.services}</dd></div>
                 <div><dt className="text-hero-muted">Location</dt><dd>{selected.serviceCity}</dd></div>
                 <div><dt className="text-hero-muted">Urgency</dt><dd className="capitalize">{selected.urgency}</dd></div>
                 <div><dt className="text-hero-muted">Phone</dt><dd>{selected.phone}</dd></div>

@@ -1,18 +1,11 @@
-import { MarketingHome } from "@/components/marketing/MarketingHome";
-import { getActiveServices } from "@/lib/data/public";
-import { mapMarketingServices } from "@/lib/map-public-data";
+import { Ss1OnePage } from "@/components/marketing/ss1/Ss1OnePage";
+import { getSiteContent } from "@/lib/data/public";
 import { localBusinessJsonLd } from "@/lib/site-metadata";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ service?: string }>;
-}) {
-  const params = await searchParams;
-  const services = await getActiveServices();
-  const serviceItems = mapMarketingServices(services);
+export default async function HomePage() {
+  const content = await getSiteContent();
 
   return (
     <>
@@ -20,7 +13,7 @@ export default async function HomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd()) }}
       />
-      <MarketingHome services={serviceItems} preselectedServiceId={params.service} />
+      <Ss1OnePage content={content} />
     </>
   );
 }
