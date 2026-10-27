@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import type { Transporter } from "nodemailer";
 
 /** TekSavvy-hosted domain mail: smtp.teksavvy.com:587 (STARTTLS) or :465 (SSL). */
 export function getSmtpPassword(): string | undefined {
@@ -9,7 +9,7 @@ export function getSmtpPassword(): string | undefined {
   return pass || undefined;
 }
 
-export function getMailTransport(): nodemailer.Transporter<SMTPTransport.SentMessageInfo> | null {
+export function getMailTransport(): Transporter | null {
   const host = process.env.SMTP_HOST?.trim();
   if (!host) return null;
 
