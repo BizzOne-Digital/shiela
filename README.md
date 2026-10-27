@@ -23,7 +23,7 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
    - `SESSION_SECRET` (32+ random characters)
    - `NEXT_PUBLIC_SITE_URL`
    - `OFFICE_EMAIL` (defaults to servicerequests@angelonedocuments.com)
-   - SMTP variables when you are ready to send email
+   - SMTP variables (TekSavvy: `smtp.teksavvy.com`, port `587`, full address as `SMTP_USER` — see `.env.example`)
 
 3. Install dependencies:
 
@@ -74,6 +74,7 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
 | Command | Description |
 |---------|-------------|
 | `npm run create:admin` | Create first admin user |
+| `npm run smtp:verify` | Test TekSavvy SMTP login and send a test email |
 | `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
 | `npm run build` | Production build |
@@ -86,7 +87,7 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
    npm run create:admin -- admin@yourdomain.com "long-secure-password" --reset
    ```
 3. Set `STORAGE_DRIVER=s3` with a private bucket for PDFs.
-4. Configure verified SMTP (`SMTP_FROM`, `SMTP_*`).
+4. Configure TekSavvy SMTP on the host (`SMTP_HOST=smtp.teksavvy.com`, `SMTP_USER=info@angelonedocuments.com`, etc.). Add the same vars in **Vercel → Settings → Environment Variables**. For deliverability to Gmail, ensure domain SPF includes TekSavvy (e.g. `include:_spf.teksavvy.com` or your host’s record).
 5. Set `NEXT_PUBLIC_SITE_URL` to your canonical HTTPS URL (sitemap, metadata, emails).
 6. Build and start:
    ```bash

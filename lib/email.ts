@@ -1,23 +1,9 @@
-import nodemailer from "nodemailer";
 import { BUSINESS } from "@/lib/constants";
 import { escapeHtml, siteUrl } from "@/lib/utils";
 import type { ServiceRequestDocument } from "@/models/ServiceRequest";
 import { URGENCY_OPTIONS } from "@/lib/constants";
 import { getStorage } from "@/lib/storage";
-
-function getTransport() {
-  const host = process.env.SMTP_HOST;
-  if (!host) return null;
-  return nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === "true",
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
-  });
-}
+import { getMailTransport } from "@/lib/smtp";
 
 function urgencyLabel(value: string) {
   return URGENCY_OPTIONS.find((u) => u.value === value)?.label ?? value;
@@ -27,7 +13,7 @@ export async function sendOfficeNotification(
   request: ServiceRequestDocument,
   adminDownloadBase?: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const transport = getTransport();
+  const transport = getMailTransport();
   const to = process.env.OFFICE_EMAIL ?? BUSINESS.serviceRequestsEmail;
   if (!transport) {
     return { ok: false, error: "SMTP not configured" };
@@ -76,7 +62,7 @@ export async function sendOfficeNotification(
 
   try {
     await transport.sendMail({
-      from: process.env.SMTP_FROM ?? `noreply@angelonedocuments.com`,
+      from: process.env.SMTP_FROM ?? `Angel One Documents <${BUSINESS.infoEmail}>`,
       to,
       replyTo: request.email,
       subject: `[${request.referenceNumber}] New service request — ${request.fullName}`,
@@ -92,7 +78,7 @@ export async function sendOfficeNotification(
 export async function sendAcknowledgement(
   request: ServiceRequestDocument,
 ): Promise<{ ok: boolean; error?: string }> {
-  const transport = getTransport();
+  const transport = getMailTransport();
   if (!transport) {
     return { ok: false, error: "SMTP not configured" };
   }
