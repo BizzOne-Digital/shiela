@@ -21,26 +21,40 @@ export async function sendOfficeNotification(
 
   const storage = getStorage();
   const base = adminDownloadBase ?? siteUrl();
+  // A localhost link is dead for anyone reading the email, so only add portal links on a real domain.
+  const hasPortalLinks = !/localhost|127.0.0.1/.test(base);
   const docLines: string[] = [];
-  const attachments: { filename: string; content: Buffer; contentType: string }[] = [];
+  const attachments: {
+    filename: string;
+    content: Buffer;
+    contentType: string;
+    contentDisposition: "attachment";
+  }[] = [];
+  const missingFiles: string[] = [];
   for (const doc of request.documents) {
     // Opens the PDF in the browser; the admin must be signed in.
     const link = `${base}/api/admin/documents?requestId=${request._id}&key=${encodeURIComponent(doc.storageKey)}&inline=1`;
     docLines.push(
-      `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached, or <a href="${escapeHtml(link)}">open in admin portal</a></li>`,
+      hasPortalLinks
+        ? `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached to this email, or <a href="${escapeHtml(link)}">open in admin portal</a></li>`
+        : `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached to this email</li>`,
     );
     try {
       const chunks: Buffer[] = [];
       for await (const chunk of await storage.getStream(doc.storageKey)) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
+      const content = Buffer.concat(chunks);
+      if (content.length === 0) throw new Error("empty file");
       attachments.push({
-        filename: doc.originalName,
-        content: Buffer.concat(chunks),
+        filename: /.pdf$/i.test(doc.originalName) ? doc.originalName : `${doc.originalName}.pdf`,
+        content,
         contentType: "application/pdf",
+        contentDisposition: "attachment",
       });
-    } catch {
-      /* the portal link above still works */
+    } catch (e) {
+      console.error(`[email] could not attach "${doc.originalName}":`, e);
+      missingFiles.push(doc.originalName);
     }
   }
 
@@ -65,8 +79,9 @@ export async function sendOfficeNotification(
     <h3>Matter details</h3>
     <p style="white-space:pre-wrap">${escapeHtml(request.matterDetails)}</p>
     <h3>Documents</h3>
+    ${missingFiles.length ? `<p style="color:#b00020"><strong>Could not attach:</strong> ${missingFiles.map(escapeHtml).join(", ")} — open from the admin portal.</p>` : ""}
     ${docLines.length ? `<ul>${docLines.join("")}</ul>` : "<p>No documents uploaded.</p>"}
-    <p><a href="${escapeHtml(base)}/admin/bookings?id=${request._id}">View in admin portal</a></p>
+    ${hasPortalLinks ? `<p><a href="${escapeHtml(base)}/admin/bookings?id=${request._id}">View in admin portal</a></p>` : ""}
   `;
 
   const message = {
