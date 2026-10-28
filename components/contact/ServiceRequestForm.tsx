@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
-import { BUSINESS, MATTER_DETAILS_MAX, MAX_PDF_BYTES } from "@/lib/constants";
+import { BUSINESS, MATTER_DETAILS_MAX, MAX_PDF_BYTES, MAX_PDF_MB } from "@/lib/constants";
 
 type FormState = {
   fullName: string;
@@ -75,7 +75,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
     if (matterDetails.length > MATTER_DETAILS_MAX) {
       e.instructions = `Combined details must be under ${MATTER_DETAILS_MAX} characters.`;
     }
-    if (totalBytes > MAX_PDF_BYTES) e.files = "Combined PDFs must be under 20 MB.";
+    if (totalBytes > MAX_PDF_BYTES) e.files = `Combined PDFs must be under ${MAX_PDF_MB} MB. Please email larger files to ${BUSINESS.largeFilesEmail}.`;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -112,7 +112,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
       if (!res.ok || !data) {
         setSubmitError(
           res.status === 413
-            ? "The PDFs are too large to upload. Please attach fewer or smaller files and try again."
+            ? "The PDFs are too large to upload. Please attach fewer or smaller files, or email them directly to " + BUSINESS.largeFilesEmail + "."
             : (data?.error ?? `Submission failed (error ${res.status}). Please try again.`),
         );
         return;
@@ -261,8 +261,11 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
       </button>
 
       <p className="mt-4 text-sm leading-relaxed text-hero-muted">
-        Submitting opens your email app with the details filled in. Your email app cannot receive files from this
-        page automatically, so please attach the PDFs you selected there before sending.
+        If your PDF files are larger than {MAX_PDF_MB} MB in total, please email them directly to{" "}
+        <a href={`mailto:${BUSINESS.largeFilesEmail}`} className="font-semibold text-[#35546C] underline">
+          {BUSINESS.largeFilesEmail}
+        </a>
+        .
       </p>
     </div>
   );

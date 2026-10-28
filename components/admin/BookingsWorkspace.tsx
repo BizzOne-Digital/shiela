@@ -178,12 +178,21 @@ export function BookingsWorkspace({
                     <li className="text-hero-muted">None</li>
                   ) : (
                     selected.documents.map((d) => (
-                      <li key={d.storageKey}>
+                      <li key={d.storageKey} className="flex flex-wrap items-center gap-x-3">
+                        <span className="break-all">{d.originalName}</span>
+                        <a
+                          className="font-medium text-accent"
+                          href={`/api/admin/documents?requestId=${selected._id}&key=${encodeURIComponent(d.storageKey)}&inline=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open
+                        </a>
                         <a
                           className="text-accent"
                           href={`/api/admin/documents?requestId=${selected._id}&key=${encodeURIComponent(d.storageKey)}`}
                         >
-                          {d.originalName}
+                          Download
                         </a>
                       </li>
                     ))

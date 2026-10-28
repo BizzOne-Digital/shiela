@@ -3,6 +3,7 @@ import {
   ADD_ON_OPTIONS,
   MATTER_DETAILS_MAX,
   MAX_PDF_BYTES,
+  MAX_PDF_MB,
   REQUESTER_TYPES,
   URGENCY_OPTIONS,
 } from "@/lib/constants";
@@ -49,7 +50,7 @@ export function validatePdfFiles(
     total += f.size;
   }
   if (total > MAX_PDF_BYTES) {
-    return { ok: false, message: "Combined PDF size must not exceed 20 MB." };
+    return { ok: false, message: `Combined PDF size must not exceed ${MAX_PDF_MB} MB.` };
   }
   return { ok: true };
 }

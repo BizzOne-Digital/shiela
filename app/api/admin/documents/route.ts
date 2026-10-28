@@ -28,6 +28,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }
 
+  const inline = req.nextUrl.searchParams.get("inline") === "1";
+  const safeName = doc.originalName.replace(/["\r\n]/g, "");
   const storage = getStorage();
   try {
     const stream = await storage.getStream(storageKey);
@@ -35,7 +37,8 @@ export async function GET(req: NextRequest) {
     return new NextResponse(webStream, {
       headers: {
         "Content-Type": doc.mimeType,
-        "Content-Disposition": `attachment; filename="${doc.originalName.replace(/"/g, "")}"`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`,
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch {

@@ -20,19 +20,28 @@ export async function sendOfficeNotification(
   }
 
   const storage = getStorage();
+  const base = adminDownloadBase ?? siteUrl();
   const docLines: string[] = [];
+  const attachments: { filename: string; content: Buffer; contentType: string }[] = [];
   for (const doc of request.documents) {
-    let link = `${adminDownloadBase ?? siteUrl()}/admin/bookings/${request._id}?doc=${encodeURIComponent(doc.storageKey)}`;
-    if (storage.getSignedDownloadUrl) {
-      try {
-        link = await storage.getSignedDownloadUrl(doc.storageKey, 60 * 60 * 24 * 7);
-      } catch {
-        /* use admin link */
-      }
-    }
+    // Opens the PDF in the browser; the admin must be signed in.
+    const link = `${base}/api/admin/documents?requestId=${request._id}&key=${encodeURIComponent(doc.storageKey)}&inline=1`;
     docLines.push(
-      `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — <a href="${escapeHtml(link)}">Secure access</a></li>`,
+      `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached, or <a href="${escapeHtml(link)}">open in admin portal</a></li>`,
     );
+    try {
+      const chunks: Buffer[] = [];
+      for await (const chunk of await storage.getStream(doc.storageKey)) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      attachments.push({
+        filename: doc.originalName,
+        content: Buffer.concat(chunks),
+        contentType: "application/pdf",
+      });
+    } catch {
+      /* the portal link above still works */
+    }
   }
 
   const html = `
@@ -57,17 +66,28 @@ export async function sendOfficeNotification(
     <p style="white-space:pre-wrap">${escapeHtml(request.matterDetails)}</p>
     <h3>Documents</h3>
     ${docLines.length ? `<ul>${docLines.join("")}</ul>` : "<p>No documents uploaded.</p>"}
-    <p><a href="${escapeHtml(siteUrl())}/admin/bookings/${request._id}">View in admin portal</a></p>
+    <p><a href="${escapeHtml(base)}/admin/bookings?id=${request._id}">View in admin portal</a></p>
   `;
 
+  const message = {
+    from: process.env.SMTP_FROM ?? `Angel One Documents <${BUSINESS.infoEmail}>`,
+    to,
+    replyTo: request.email,
+    subject: `[${request.referenceNumber}] New service request — ${request.fullName}`,
+    html,
+  };
+
   try {
-    await transport.sendMail({
-      from: process.env.SMTP_FROM ?? `Angel One Documents <${BUSINESS.infoEmail}>`,
-      to,
-      replyTo: request.email,
-      subject: `[${request.referenceNumber}] New service request — ${request.fullName}`,
-      html,
-    });
+    try {
+      await transport.sendMail({ ...message, attachments });
+    } catch (e) {
+      // Some mail servers reject large attachments; resend with portal links only.
+      if (!attachments.length) throw e;
+      await transport.sendMail({
+        ...message,
+        html: `<p><em>PDFs could not be attached to this email — open them from the links below or the admin portal.</em></p>${html}`,
+      });
+    }
     return { ok: true };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Send failed";

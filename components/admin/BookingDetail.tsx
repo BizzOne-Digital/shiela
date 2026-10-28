@@ -91,13 +91,24 @@ export function BookingDetail({ booking }: { booking: BookingDetailData }) {
           <ul className="mt-3 space-y-2 text-sm">
             {booking.documents.map((d) => (
               <li key={d.storageKey}>
-                <a
-                  className="text-accent hover:text-ink"
-                  href={`/api/admin/documents?requestId=${booking._id}&key=${encodeURIComponent(d.storageKey)}`}
-                >
-                  {d.originalName}
-                </a>
+                <span>{d.originalName}</span>
                 <span className="text-ink/50"> ({Math.round(d.sizeBytes / 1024)} KB)</span>
+                <span className="ml-3 space-x-3">
+                  <a
+                    className="font-medium text-accent hover:text-ink"
+                    href={`/api/admin/documents?requestId=${booking._id}&key=${encodeURIComponent(d.storageKey)}&inline=1`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open
+                  </a>
+                  <a
+                    className="text-accent hover:text-ink"
+                    href={`/api/admin/documents?requestId=${booking._id}&key=${encodeURIComponent(d.storageKey)}`}
+                  >
+                    Download
+                  </a>
+                </span>
               </li>
             ))}
           </ul>
