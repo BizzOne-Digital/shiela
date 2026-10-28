@@ -108,9 +108,13 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
 
     try {
       const res = await fetch("/api/service-requests", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) {
-        setSubmitError(data.error ?? "Submission failed.");
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        setSubmitError(
+          res.status === 413
+            ? "The PDFs are too large to upload. Please attach fewer or smaller files and try again."
+            : (data?.error ?? `Submission failed (error ${res.status}). Please try again.`),
+        );
         return;
       }
       setSuccess(data.referenceNumber);

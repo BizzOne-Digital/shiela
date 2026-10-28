@@ -107,7 +107,8 @@ export async function POST(req: NextRequest) {
         mimeType: "application/pdf",
       });
     }
-  } catch {
+  } catch (e) {
+    console.error("[service-requests] document storage failed:", e);
     for (const d of storedDocs) {
       await storage.delete(d.storageKey).catch(() => undefined);
     }
@@ -156,6 +157,7 @@ export async function POST(req: NextRequest) {
         "Your request has been received. Our office will review your requirements and contact you. This does not confirm pricing, availability, or acceptance of service.",
     });
   } catch (e) {
+    console.error("[service-requests] could not save request:", e);
     for (const d of storedDocs) {
       await storage.delete(d.storageKey).catch(() => undefined);
     }

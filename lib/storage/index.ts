@@ -7,6 +7,9 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable } from "stream";
+import mongoose from "mongoose";
+import { connectMongo } from "@/lib/mongodb";
 
 export interface StoredObject {
   storageKey: string;
@@ -53,6 +56,38 @@ class LocalStorageAdapter implements StorageAdapter {
     } catch {
       /* ignore missing */
     }
+  }
+}
+
+/** Stores files in MongoDB GridFS — works on serverless hosts where the disk is read-only. */
+class GridFsStorageAdapter implements StorageAdapter {
+  private async bucket() {
+    await connectMongo();
+    const db = mongoose.connection.db;
+    if (!db) throw new Error("MongoDB not connected");
+    return new mongoose.mongo.GridFSBucket(db, { bucketName: "uploads" });
+  }
+
+  async put(key: string, body: Buffer, contentType: string): Promise<StoredObject> {
+    const bucket = await this.bucket();
+    await new Promise<void>((resolve, reject) => {
+      const upload = bucket.openUploadStream(key, { metadata: { contentType } });
+      upload.on("error", reject);
+      upload.on("finish", () => resolve());
+      Readable.from(body).pipe(upload);
+    });
+    return { storageKey: key, sizeBytes: body.length };
+  }
+
+  async getStream(key: string): Promise<NodeJS.ReadableStream> {
+    const bucket = await this.bucket();
+    return bucket.openDownloadStreamByName(key);
+  }
+
+  async delete(key: string): Promise<void> {
+    const bucket = await this.bucket();
+    const files = await bucket.find({ filename: key }).toArray();
+    for (const f of files) await bucket.delete(f._id).catch(() => undefined);
   }
 }
 
@@ -107,8 +142,12 @@ let adapter: StorageAdapter | null = null;
 export function getStorage(): StorageAdapter {
   if (adapter) return adapter;
   const driver = process.env.STORAGE_DRIVER ?? "local";
+  // Serverless hosts have a read-only disk, so "local" falls back to MongoDB there.
+  const serverless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
   if (driver === "s3") {
     adapter = new S3StorageAdapter();
+  } else if (driver === "mongo" || (driver === "local" && serverless)) {
+    adapter = new GridFsStorageAdapter();
   } else {
     adapter = new LocalStorageAdapter(process.env.STORAGE_LOCAL_PATH ?? ".data/private-uploads");
   }
