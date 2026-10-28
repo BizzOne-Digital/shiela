@@ -9,6 +9,10 @@ import { generateReferenceNumber, normalizeFilename } from "@/lib/utils";
 import { buildStorageKey, getStorage } from "@/lib/storage";
 import { sendAcknowledgement, sendOfficeNotification } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { MAX_PDF_BYTES, MAX_PDF_MB } from "@/lib/constants";
+import { assembleUpload, deleteUploads, uploadRefsSchema, type UploadRef } from "@/lib/uploads";
+
+class UploadError extends Error {}
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -43,6 +47,20 @@ export async function POST(req: NextRequest) {
     idempotencyKey: String(formData.get("idempotencyKey") ?? ""),
   };
 
+  let uploadRefs: UploadRef[] = [];
+  try {
+    const rawUploads = String(formData.get("uploads") ?? "[]");
+    uploadRefs = uploadRefsSchema.parse(JSON.parse(rawUploads));
+  } catch {
+    return NextResponse.json({ error: "Invalid document list." }, { status: 400 });
+  }
+  if (uploadRefs.reduce((sum, r) => sum + r.size, 0) > MAX_PDF_BYTES) {
+    return NextResponse.json(
+      { error: `Combined PDF size must not exceed ${MAX_PDF_MB} MB.` },
+      { status: 400 },
+    );
+  }
+
   const parsed = serviceRequestBodySchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
@@ -66,26 +84,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const fileEntries = formData.getAll("documents");
-  const pdfFiles: { name: string; type: string; size: number; buffer: Buffer }[] = [];
-  for (const entry of fileEntries) {
-    if (!(entry instanceof File) || entry.size === 0) continue;
-    const buffer = Buffer.from(await entry.arrayBuffer());
-    pdfFiles.push({
-      name: entry.name,
-      type: entry.type,
-      size: entry.size,
-      buffer,
-    });
-  }
-
-  if (pdfFiles.length) {
-    const pdfCheck = validatePdfFiles(pdfFiles);
-    if (!pdfCheck.ok) {
-      return NextResponse.json({ error: pdfCheck.message }, { status: 400 });
-    }
-  }
-
   const referenceNumber = generateReferenceNumber();
   const storage = getStorage();
   const storedDocs: {
@@ -96,14 +94,22 @@ export async function POST(req: NextRequest) {
   }[] = [];
 
   try {
-    for (const f of pdfFiles) {
-      const name = normalizeFilename(f.name);
+    for (const ref of uploadRefs) {
+      const buffer = await assembleUpload(ref);
+      if (!buffer) {
+        throw new UploadError(`"${ref.name}" did not finish uploading. Please try again.`);
+      }
+      const name = normalizeFilename(ref.name);
+      const check = validatePdfFiles([
+        { name, type: "application/pdf", size: buffer.length, buffer },
+      ]);
+      if (!check.ok) throw new UploadError(check.message);
       const key = buildStorageKey(referenceNumber, name);
-      await storage.put(key, f.buffer, "application/pdf");
+      await storage.put(key, buffer, "application/pdf");
       storedDocs.push({
         originalName: name,
         storageKey: key,
-        sizeBytes: f.buffer.length,
+        sizeBytes: buffer.length,
         mimeType: "application/pdf",
       });
     }
@@ -111,6 +117,9 @@ export async function POST(req: NextRequest) {
     console.error("[service-requests] document storage failed:", e);
     for (const d of storedDocs) {
       await storage.delete(d.storageKey).catch(() => undefined);
+    }
+    if (e instanceof UploadError) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
     }
     return NextResponse.json({ error: "Failed to store documents." }, { status: 500 });
   }
@@ -149,6 +158,7 @@ export async function POST(req: NextRequest) {
     if (!ackResult.ok) request.acknowledgementEmailError = ackResult.error;
 
     await request.save();
+    await deleteUploads(uploadRefs).catch(() => undefined);
 
     return NextResponse.json({
       success: true,

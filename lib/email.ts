@@ -1,4 +1,4 @@
-import { BUSINESS } from "@/lib/constants";
+import { BUSINESS, EMAIL_ATTACH_MAX_BYTES } from "@/lib/constants";
 import { escapeHtml, siteUrl } from "@/lib/utils";
 import type { ServiceRequestDocument } from "@/models/ServiceRequest";
 import { URGENCY_OPTIONS } from "@/lib/constants";
@@ -31,6 +31,7 @@ export async function sendOfficeNotification(
     contentDisposition: "attachment";
   }[] = [];
   const missingFiles: string[] = [];
+  let attachedBytes = 0;
   for (const doc of request.documents) {
     // Opens the PDF in the browser; the admin must be signed in.
     const link = `${base}/api/admin/documents?requestId=${request._id}&key=${encodeURIComponent(doc.storageKey)}&inline=1`;
@@ -39,6 +40,10 @@ export async function sendOfficeNotification(
         ? `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached to this email, or <a href="${escapeHtml(link)}">open in admin portal</a></li>`
         : `<li>${escapeHtml(doc.originalName)} (${Math.round(doc.sizeBytes / 1024)} KB) — attached to this email</li>`,
     );
+    if (attachedBytes + doc.sizeBytes > EMAIL_ATTACH_MAX_BYTES) {
+      missingFiles.push(doc.originalName);
+      continue;
+    }
     try {
       const chunks: Buffer[] = [];
       for await (const chunk of await storage.getStream(doc.storageKey)) {
@@ -46,6 +51,7 @@ export async function sendOfficeNotification(
       }
       const content = Buffer.concat(chunks);
       if (content.length === 0) throw new Error("empty file");
+      attachedBytes += content.length;
       attachments.push({
         filename: /.pdf$/i.test(doc.originalName) ? doc.originalName : `${doc.originalName}.pdf`,
         content,
@@ -63,9 +69,9 @@ export async function sendOfficeNotification(
     <p><strong>Status:</strong> ${escapeHtml(request.status)}</p>
     <h3>Contact</h3>
     <ul>
-      <li><strong>Type:</strong> ${escapeHtml(request.requesterType)}</li>
+      <li><strong>Submitted as:</strong> ${escapeHtml(request.requesterType)}</li>
       <li><strong>Name:</strong> ${escapeHtml(request.fullName)}</li>
-      <li><strong>Company:</strong> ${escapeHtml(request.company || "—")}</li>
+      <li><strong>Law office / firm / company:</strong> ${escapeHtml(request.company || "—")}</li>
       <li><strong>Email:</strong> ${escapeHtml(request.email)}</li>
       <li><strong>Phone:</strong> ${escapeHtml(request.phone)}</li>
     </ul>
@@ -79,7 +85,7 @@ export async function sendOfficeNotification(
     <h3>Matter details</h3>
     <p style="white-space:pre-wrap">${escapeHtml(request.matterDetails)}</p>
     <h3>Documents</h3>
-    ${missingFiles.length ? `<p style="color:#b00020"><strong>Could not attach:</strong> ${missingFiles.map(escapeHtml).join(", ")} — open from the admin portal.</p>` : ""}
+    ${missingFiles.length ? `<p style="color:#b00020"><strong>Not attached to this email (too large or unavailable):</strong> ${missingFiles.map(escapeHtml).join(", ")} — open from the admin portal.</p>` : ""}
     ${docLines.length ? `<ul>${docLines.join("")}</ul>` : "<p>No documents uploaded.</p>"}
     ${hasPortalLinks ? `<p><a href="${escapeHtml(base)}/admin/bookings?id=${request._id}">View in admin portal</a></p>` : ""}
   `;
@@ -88,7 +94,7 @@ export async function sendOfficeNotification(
     from: process.env.SMTP_FROM ?? `Angel One Documents <${BUSINESS.infoEmail}>`,
     to,
     replyTo: request.email,
-    subject: `[${request.referenceNumber}] New service request — ${request.fullName}`,
+    subject: `[${request.referenceNumber}] New service request — ${request.fullName} (${request.requesterType})`,
     html,
   };
 

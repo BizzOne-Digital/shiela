@@ -160,6 +160,7 @@ export function BookingsWorkspace({
               <div className="mt-4 rounded-xl bg-[#f4f7fb] p-4 text-sm">
                 <p className="font-semibold">{selected.fullName}</p>
                 <p className="text-hero-muted">{selected.requesterType}</p>
+                {selected.company && <p className="text-hero-muted">{selected.company}</p>}
                 <a href={`mailto:${selected.email}`} className="text-accent">{selected.email}</a>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">

@@ -71,8 +71,13 @@ export const SPECIAL_OFFERS = [
   "Inquire about our high-volume partner pricing for ongoing Civil, Personal Injury, Family and Small Claims matters.",
 ] as const;
 
-export const MAX_PDF_MB = 25;
+export const MAX_FILES = 20;
+export const MAX_PDF_MB = 100;
 export const MAX_PDF_BYTES = MAX_PDF_MB * 1024 * 1024;
+/** PDFs upload in pieces this size so each request stays under host body limits (e.g. 4.5 MB). */
+export const UPLOAD_CHUNK_BYTES = 3 * 1024 * 1024;
+/** Most mail servers reject messages over ~25 MB, so only this much is attached to the office email. */
+export const EMAIL_ATTACH_MAX_BYTES = 18 * 1024 * 1024;
 export const MATTER_DETAILS_MAX = 5000;
 
 export const ICON_KEYS = [

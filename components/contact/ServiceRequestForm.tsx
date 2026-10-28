@@ -1,10 +1,62 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import { BUSINESS, MATTER_DETAILS_MAX, MAX_PDF_BYTES, MAX_PDF_MB } from "@/lib/constants";
+import {
+  BUSINESS,
+  MATTER_DETAILS_MAX,
+  MAX_PDF_BYTES,
+  MAX_FILES,
+  MAX_PDF_MB,
+  REQUESTER_TYPES,
+  UPLOAD_CHUNK_BYTES,
+} from "@/lib/constants";
+
+const REQUESTER_LABELS: Record<(typeof REQUESTER_TYPES)[number], string> = {
+  "Legal Professional": "Legal professional (lawyer, paralegal, law office)",
+  "Small Business": "Small business",
+  "Member of the Public": "Member of the public / self-represented",
+};
+
+type UploadedRef = { uploadId: string; name: string; size: number; chunks: number };
+
+async function uploadFileInChunks(
+  file: File,
+  onProgress: (fraction: number) => void,
+): Promise<UploadedRef> {
+  const uploadId = nanoid(24);
+  const chunks = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_BYTES));
+  for (let i = 0; i < chunks; i++) {
+    const piece = file.slice(i * UPLOAD_CHUNK_BYTES, (i + 1) * UPLOAD_CHUNK_BYTES);
+    let lastError = "Upload failed.";
+    let ok = false;
+    for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+      try {
+        const res = await fetch(`/api/uploads?uploadId=${uploadId}&index=${i}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: piece,
+        });
+        if (res.ok) {
+          ok = true;
+        } else {
+          const data = await res.json().catch(() => null);
+          lastError = data?.error ?? `Upload failed (error ${res.status}).`;
+          if (res.status === 400 || res.status === 429) break; // retrying will not help
+        }
+      } catch {
+        lastError = "Network error while uploading.";
+      }
+    }
+    if (!ok) throw new Error(`${file.name}: ${lastError}`);
+    onProgress((i + 1) / chunks);
+  }
+  return { uploadId, name: file.name, size: file.size, chunks };
+}
 
 type FormState = {
+  requesterType: string;
+  company: string;
   fullName: string;
   email: string;
   phone: string;
@@ -18,6 +70,8 @@ type FormState = {
 };
 
 const initial: FormState = {
+  requesterType: "",
+  company: "",
   fullName: "",
   email: "",
   phone: "",
@@ -54,6 +108,8 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  const uploadedRef = useRef(new Map<File, UploadedRef>());
   const idempotencyKey = useMemo(() => nanoid(24), []);
 
   const totalBytes = files.reduce((a, f) => a + f.size, 0);
@@ -62,6 +118,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
+    if (!form.requesterType) e.requesterType = "Please tell us who you are.";
     if (!form.fullName.trim()) e.fullName = "Required.";
     if (!form.email.trim()) e.email = "Required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email.";
@@ -76,6 +133,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
       e.instructions = `Combined details must be under ${MATTER_DETAILS_MAX} characters.`;
     }
     if (totalBytes > MAX_PDF_BYTES) e.files = `Combined PDFs must be under ${MAX_PDF_MB} MB. Please email larger files to ${BUSINESS.largeFilesEmail}.`;
+    if (files.length > MAX_FILES) e.files = `Please attach no more than ${MAX_FILES} files.`;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -91,37 +149,50 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
     setSubmitting(true);
     setSubmitError(null);
     const matterDetails = buildMatterDetails(form);
-    const body = new FormData();
-    body.append("requesterType", "Member of the Public");
-    body.append("fullName", form.fullName.trim());
-    body.append("company", "");
-    body.append("email", form.email.trim());
-    body.append("phone", form.phone.trim());
-    body.append("serviceAddress", form.serviceAddress.trim());
-    body.append("serviceCity", form.courtCourthouse.trim());
-    body.append("urgency", "standard");
-    body.append("courtDeadline", form.serveFileBy);
-    body.append("matterDetails", matterDetails);
-    body.append("idempotencyKey", idempotencyKey);
-    body.append("website", "");
-    files.forEach((f) => body.append("documents", f));
 
     try {
+      const refs: UploadedRef[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        let ref = uploadedRef.current.get(file);
+        if (!ref) {
+          setProgress(`Uploading file ${i + 1} of ${files.length}: 0%`);
+          ref = await uploadFileInChunks(file, (fraction) =>
+            setProgress(`Uploading file ${i + 1} of ${files.length}: ${Math.round(fraction * 100)}%`),
+          );
+          uploadedRef.current.set(file, ref);
+        }
+        refs.push(ref);
+      }
+
+      setProgress("Sending your request…");
+      const body = new FormData();
+      body.append("requesterType", form.requesterType);
+      body.append("fullName", form.fullName.trim());
+      body.append("company", form.company.trim());
+      body.append("email", form.email.trim());
+      body.append("phone", form.phone.trim());
+      body.append("serviceAddress", form.serviceAddress.trim());
+      body.append("serviceCity", form.courtCourthouse.trim());
+      body.append("urgency", "standard");
+      body.append("courtDeadline", form.serveFileBy);
+      body.append("matterDetails", matterDetails);
+      body.append("idempotencyKey", idempotencyKey);
+      body.append("website", "");
+      body.append("uploads", JSON.stringify(refs));
+
       const res = await fetch("/api/service-requests", { method: "POST", body });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
-        setSubmitError(
-          res.status === 413
-            ? "The PDFs are too large to upload. Please attach fewer or smaller files, or email them directly to " + BUSINESS.largeFilesEmail + "."
-            : (data?.error ?? `Submission failed (error ${res.status}). Please try again.`),
-        );
+        setSubmitError(data?.error ?? `Submission failed (error ${res.status}). Please try again.`);
         return;
       }
       setSuccess(data.referenceNumber);
-    } catch {
-      setSubmitError("Network error. Please try again.");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Network error. Please try again.");
     } finally {
       setSubmitting(false);
+      setProgress(null);
     }
   };
 
@@ -147,6 +218,28 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
   return (
     <div className={shellClass}>
       <div className="space-y-5">
+        <Field label="I am a" error={errors.requesterType}>
+          <select
+            className="input"
+            value={form.requesterType}
+            onChange={(e) => update({ requesterType: e.target.value })}
+          >
+            <option value="">Select...</option>
+            {REQUESTER_TYPES.map((t) => (
+              <option key={t} value={t}>{REQUESTER_LABELS[t]}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Law office / firm / company (optional)" error={errors.company}>
+          <input
+            className="input"
+            value={form.company}
+            onChange={(e) => update({ company: e.target.value })}
+            autoComplete="organization"
+          />
+        </Field>
+
         <Field label="Full name" error={errors.fullName}>
           <input
             className="input"
@@ -257,7 +350,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
         onClick={submit}
         disabled={submitting}
       >
-        {submitting ? "Sending…" : "Send service request"}
+        {submitting ? (progress ?? "Sending…") : "Send service request"}
       </button>
 
       <p className="mt-4 text-sm leading-relaxed text-hero-muted">
