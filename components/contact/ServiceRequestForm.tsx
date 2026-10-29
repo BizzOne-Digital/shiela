@@ -1,58 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { nanoid } from "nanoid";
-import {
-  BUSINESS,
-  MATTER_DETAILS_MAX,
-  MAX_PDF_BYTES,
-  MAX_FILES,
-  MAX_PDF_MB,
-  REQUESTER_TYPES,
-  UPLOAD_CHUNK_BYTES,
-} from "@/lib/constants";
+import { BUSINESS, MATTER_DETAILS_MAX, REQUESTER_TYPES } from "@/lib/constants";
 
 const REQUESTER_LABELS: Record<(typeof REQUESTER_TYPES)[number], string> = {
   "Legal Professional": "Legal professional (lawyer, paralegal, law office)",
   "Small Business": "Small business",
   "Member of the Public": "Member of the public / self-represented",
 };
-
-type UploadedRef = { uploadId: string; name: string; size: number; chunks: number };
-
-async function uploadFileInChunks(
-  file: File,
-  onProgress: (fraction: number) => void,
-): Promise<UploadedRef> {
-  const uploadId = nanoid(24);
-  const chunks = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_BYTES));
-  for (let i = 0; i < chunks; i++) {
-    const piece = file.slice(i * UPLOAD_CHUNK_BYTES, (i + 1) * UPLOAD_CHUNK_BYTES);
-    let lastError = "Upload failed.";
-    let ok = false;
-    for (let attempt = 0; attempt < 3 && !ok; attempt++) {
-      try {
-        const res = await fetch(`/api/uploads?uploadId=${uploadId}&index=${i}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: piece,
-        });
-        if (res.ok) {
-          ok = true;
-        } else {
-          const data = await res.json().catch(() => null);
-          lastError = data?.error ?? `Upload failed (error ${res.status}).`;
-          if (res.status === 400 || res.status === 429) break; // retrying will not help
-        }
-      } catch {
-        lastError = "Network error while uploading.";
-      }
-    }
-    if (!ok) throw new Error(`${file.name}: ${lastError}`);
-    onProgress((i + 1) / chunks);
-  }
-  return { uploadId, name: file.name, size: file.size, chunks };
-}
 
 type FormState = {
   requesterType: string;
@@ -101,18 +57,32 @@ function buildMatterDetails(form: FormState): string {
   return parts.join("\n\n");
 }
 
+/** Opens the sender's email app addressed to reception, with the request reference in the subject. */
+function documentsMailto(reference: string, form: FormState) {
+  const subject = `Documents for request ${reference}`;
+  const lines = [
+    "Hello,",
+    "",
+    `Please find my documents attached for service request ${reference}.`,
+    "",
+    `Name: ${form.fullName.trim()}`,
+    `Email: ${form.email.trim()}`,
+  ];
+  if (form.phone.trim()) lines.push(`Phone: ${form.phone.trim()}`);
+  lines.push("", "Thank you.");
+  return {
+    subject,
+    href: `mailto:${BUSINESS.receptionEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`,
+  };
+}
+
 export function ServiceRequestForm({ embedded = false }: { embedded?: boolean }) {
   const [form, setForm] = useState<FormState>(initial);
-  const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<string | null>(null);
-  const uploadedRef = useRef(new Map<File, UploadedRef>());
   const idempotencyKey = useMemo(() => nanoid(24), []);
-
-  const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
   const update = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -132,55 +102,29 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
     if (matterDetails.length > MATTER_DETAILS_MAX) {
       e.instructions = `Combined details must be under ${MATTER_DETAILS_MAX} characters.`;
     }
-    if (totalBytes > MAX_PDF_BYTES) e.files = `Combined PDFs must be under ${MAX_PDF_MB} MB. Please email larger files to ${BUSINESS.largeFilesEmail}.`;
-    if (files.length > MAX_FILES) e.files = `Please attach no more than ${MAX_FILES} files.`;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-
-  const onFiles = useCallback((incoming: FileList | null) => {
-    if (!incoming) return;
-    const pdfs = Array.from(incoming).filter((f) => f.name.toLowerCase().endsWith(".pdf"));
-    setFiles((prev) => [...prev, ...pdfs]);
-  }, []);
 
   const submit = async () => {
     if (!validate()) return;
     setSubmitting(true);
     setSubmitError(null);
-    const matterDetails = buildMatterDetails(form);
+    const body = new FormData();
+    body.append("requesterType", form.requesterType);
+    body.append("fullName", form.fullName.trim());
+    body.append("company", form.company.trim());
+    body.append("email", form.email.trim());
+    body.append("phone", form.phone.trim());
+    body.append("serviceAddress", form.serviceAddress.trim());
+    body.append("serviceCity", form.courtCourthouse.trim());
+    body.append("urgency", "standard");
+    body.append("courtDeadline", form.serveFileBy);
+    body.append("matterDetails", buildMatterDetails(form));
+    body.append("idempotencyKey", idempotencyKey);
+    body.append("website", "");
 
     try {
-      const refs: UploadedRef[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        let ref = uploadedRef.current.get(file);
-        if (!ref) {
-          setProgress(`Uploading file ${i + 1} of ${files.length}: 0%`);
-          ref = await uploadFileInChunks(file, (fraction) =>
-            setProgress(`Uploading file ${i + 1} of ${files.length}: ${Math.round(fraction * 100)}%`),
-          );
-          uploadedRef.current.set(file, ref);
-        }
-        refs.push(ref);
-      }
-
-      setProgress("Sending your request…");
-      const body = new FormData();
-      body.append("requesterType", form.requesterType);
-      body.append("fullName", form.fullName.trim());
-      body.append("company", form.company.trim());
-      body.append("email", form.email.trim());
-      body.append("phone", form.phone.trim());
-      body.append("serviceAddress", form.serviceAddress.trim());
-      body.append("serviceCity", form.courtCourthouse.trim());
-      body.append("urgency", "standard");
-      body.append("courtDeadline", form.serveFileBy);
-      body.append("matterDetails", matterDetails);
-      body.append("idempotencyKey", idempotencyKey);
-      body.append("website", "");
-      body.append("uploads", JSON.stringify(refs));
-
       const res = await fetch("/api/service-requests", { method: "POST", body });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
@@ -188,17 +132,17 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
         return;
       }
       setSuccess(data.referenceNumber);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Network error. Please try again.");
+    } catch {
+      setSubmitError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
-      setProgress(null);
     }
   };
 
   if (success) {
+    const mail = documentsMailto(success, form);
     return (
-      <div className="rounded-xl border border-pale-gray/70 bg-white p-8 text-center">
+      <div className="rounded-xl border border-pale-gray/70 bg-white p-6 text-center md:p-8">
         <h2 className="text-xl font-bold text-hero-navy">Request received</h2>
         <p className="mt-4 text-sm text-hero-navy/80">
           Reference: <strong>{success}</strong>
@@ -207,6 +151,26 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           Thank you — a confirmation will be sent from {BUSINESS.receptionEmail}. Our team will review your
           request and contact you, usually within one business day.
         </p>
+
+        <div className="mt-6 rounded-xl border border-[#5D8AB4]/40 bg-[#E3F0FB]/60 p-5 text-left">
+          <h3 className="text-base font-bold text-[#35546C]">Next step: send us your documents</h3>
+          <p className="mt-2 text-sm leading-relaxed text-hero-navy/85">
+            Click the button below to open your email with the message already filled in. Attach your PDF
+            documents to that email and press send. Please keep the reference number in the subject line so we
+            can match your documents to this request.
+          </p>
+          <a
+            href={mail.href}
+            className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#5D8AB4] px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-[#4f7aa3] sm:w-auto"
+          >
+            Open my email to send documents
+          </a>
+          <p className="mt-4 text-xs leading-relaxed text-hero-muted">
+            If the button does not open your email, send your PDFs to{" "}
+            <strong className="break-all">{BUSINESS.receptionEmail}</strong> with the subject{" "}
+            <strong>{mail.subject}</strong>.
+          </p>
+        </div>
       </div>
     );
   }
@@ -259,7 +223,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           />
         </Field>
 
-        <Field label="Phone (optional)" error={errors.phone}>
+        <Field label="Phone (optional)">
           <input
             type="tel"
             className="input"
@@ -278,7 +242,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           />
         </Field>
 
-        <Field label="Style of cause & court file number" error={errors.styleOfCause}>
+        <Field label="Style of cause & court file number">
           <input
             className="input"
             value={form.styleOfCause}
@@ -294,7 +258,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           />
         </Field>
 
-        <Field label="Documents to serve / file" error={errors.documentsDescription}>
+        <Field label="Documents to serve / file">
           <input
             className="input"
             value={form.documentsDescription}
@@ -302,7 +266,7 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           />
         </Field>
 
-        <Field label="Person / corporation to be served" error={errors.personToServe}>
+        <Field label="Person / corporation to be served">
           <input
             className="input"
             value={form.personToServe}
@@ -329,13 +293,13 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
           />
         </Field>
 
-        <PdfUpload
-          files={files}
-          setFiles={setFiles}
-          onFiles={onFiles}
-          totalBytes={totalBytes}
-          error={errors.files}
-        />
+        <div className="rounded-xl border border-[#5D8AB4]/40 bg-[#E3F0FB]/60 p-4">
+          <p className="text-sm font-bold text-[#35546C]">Sending your PDF documents</p>
+          <p className="mt-1 text-sm leading-relaxed text-hero-navy/85">
+            After you submit this request you will see a button that opens your email, already addressed to{" "}
+            {BUSINESS.receptionEmail} with your reference number. Attach your PDFs there and press send.
+          </p>
+        </div>
       </div>
 
       {submitError && (
@@ -350,16 +314,8 @@ export function ServiceRequestForm({ embedded = false }: { embedded?: boolean })
         onClick={submit}
         disabled={submitting}
       >
-        {submitting ? (progress ?? "Sending…") : "Send service request"}
+        {submitting ? "Sending…" : "Send service request"}
       </button>
-
-      <p className="mt-4 text-sm leading-relaxed text-hero-muted">
-        If your PDF files are larger than {MAX_PDF_MB} MB in total, please email them directly to{" "}
-        <a href={`mailto:${BUSINESS.largeFilesEmail}`} className="font-semibold text-[#35546C] underline">
-          {BUSINESS.largeFilesEmail}
-        </a>
-        .
-      </p>
     </div>
   );
 }
@@ -379,84 +335,5 @@ function Field({
       <div className="mt-2">{children}</div>
       {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
     </label>
-  );
-}
-
-function PdfUpload({
-  files,
-  setFiles,
-  onFiles,
-  totalBytes,
-  error,
-}: {
-  files: File[];
-  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
-  onFiles: (f: FileList | null) => void;
-  totalBytes: number;
-  error?: string;
-}) {
-  const [drag, setDrag] = useState(false);
-  const maxMb = MAX_PDF_BYTES / 1024 / 1024;
-
-  return (
-    <div>
-      <p className="text-sm font-bold text-[#35546C]">Attach PDF documents (optional)</p>
-      <p className="mt-1 text-sm text-hero-muted">PDF files only, up to {maxMb} MB in total.</p>
-      <div
-        className={`mt-3 rounded-xl border-2 border-dashed p-5 text-center transition ${
-          drag ? "border-[#5D8AB4] bg-[#E3F0FB]/60" : "border-pale-gray/80 bg-pale-blue/15"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDrag(true);
-        }}
-        onDragLeave={() => setDrag(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDrag(false);
-          onFiles(e.dataTransfer.files);
-        }}
-      >
-        <input
-          id="pdf-upload"
-          type="file"
-          accept=".pdf,application/pdf"
-          multiple
-          className="sr-only"
-          onChange={(e) => onFiles(e.target.files)}
-        />
-        <label
-          htmlFor="pdf-upload"
-          className="inline-flex cursor-pointer rounded-xl bg-[#5D8AB4] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#4f7aa3]"
-        >
-          Choose PDF files
-        </label>
-      </div>
-      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
-      {files.length > 0 && (
-        <ul className="mt-4 space-y-2 text-sm">
-          {files.map((f, i) => (
-            <li
-              key={`${f.name}-${i}`}
-              className="flex items-start justify-between gap-2 rounded-lg bg-pale-blue/30 px-3 py-2"
-            >
-              <span className="min-w-0 break-all">
-                {f.name} ({(f.size / 1024).toFixed(1)} KB)
-              </span>
-              <button
-                type="button"
-                className="shrink-0 text-xs font-semibold text-[#5D8AB4]"
-                onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-          <li className="text-xs font-medium text-hero-muted">
-            Total: {(totalBytes / 1024 / 1024).toFixed(2)} MB / {maxMb} MB
-          </li>
-        </ul>
-      )}
-    </div>
   );
 }

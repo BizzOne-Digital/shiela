@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Could not retrieve document." }, { status: 500 });
+  } catch (e) {
+    console.error("[admin/documents] could not read file:", e);
+    return NextResponse.json({ error: "Could not retrieve document." }, { status: 404 });
   }
 }

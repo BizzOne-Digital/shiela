@@ -86,7 +86,7 @@ export async function sendOfficeNotification(
     <p style="white-space:pre-wrap">${escapeHtml(request.matterDetails)}</p>
     <h3>Documents</h3>
     ${missingFiles.length ? `<p style="color:#b00020"><strong>Not attached to this email (too large or unavailable):</strong> ${missingFiles.map(escapeHtml).join(", ")} — open from the admin portal.</p>` : ""}
-    ${docLines.length ? `<ul>${docLines.join("")}</ul>` : "<p>No documents uploaded.</p>"}
+    ${docLines.length ? `<ul>${docLines.join("")}</ul>` : `<p>No documents were uploaded with this form. The client has been asked to email their PDFs to ${escapeHtml(BUSINESS.receptionEmail)} with <strong>${escapeHtml(request.referenceNumber)}</strong> in the subject line.</p>`}
     ${hasPortalLinks ? `<p><a href="${escapeHtml(base)}/admin/bookings?id=${request._id}">View in admin portal</a></p>` : ""}
   `;
 
@@ -128,6 +128,7 @@ export async function sendAcknowledgement(
     <p>Hello ${escapeHtml(request.fullName)},</p>
     <p>Thank you for contacting ${escapeHtml(BUSINESS.shortName)}. We have received your service request and appreciate your business.</p>
     <p><strong>Reference number:</strong> ${escapeHtml(request.referenceNumber)}</p>
+    <p><strong>Next step — send your documents:</strong> please email your PDF documents to <a href="mailto:${BUSINESS.receptionEmail}?subject=${encodeURIComponent(`Documents for request ${request.referenceNumber}`)}">${BUSINESS.receptionEmail}</a>. Keep the reference number <strong>${escapeHtml(request.referenceNumber)}</strong> in the subject line (or reply to this email with your attachments) so we can match them to your request.</p>
     <p>Our office will review your requirements and contact you regarding pricing and availability. Submitting this form does not confirm acceptance of service.</p>
     <p>If you need to reach us: <a href="tel:+19052137809">${BUSINESS.phone}</a> · <a href="mailto:${BUSINESS.receptionEmail}">${BUSINESS.receptionEmail}</a></p>
     <p>${escapeHtml(BUSINESS.address.full)}</p>

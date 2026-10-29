@@ -49,7 +49,8 @@ Single Next.js application (App Router, TypeScript, Tailwind CSS, MongoDB) for t
 ## Document uploads
 
 - Combined PDF limit: **10 MB** (enforced client- and server-side).
-- PDFs are stored privately (`STORAGE_DRIVER=local` uses `.data/private-uploads`, not served as static files).
+- The website no longer accepts PDF uploads. After submitting, the client gets a button that opens their email addressed to reception@angelonedocuments.com with the reference number, and attaches the PDFs themselves. Older bookings that already have PDFs still open from the admin panel.
+- Stored PDFs (older bookings) use `STORAGE_DRIVER` (`local` uses `.data/private-uploads`; on serverless hosts it falls back to MongoDB).
 - Production: set `STORAGE_DRIVER=s3` and configure S3 variables.
 - On platforms with a smaller serverless body limit (e.g. Vercel ~4.5 MB), deploy with S3 direct upload or a host that allows 10 MB request bodies. This project submits multipart form data to `/api/service-requests`; increase platform limits or extend with presigned uploads if needed.
 

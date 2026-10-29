@@ -45,6 +45,7 @@ class LocalStorageAdapter implements StorageAdapter {
 
   async getStream(key: string): Promise<NodeJS.ReadableStream> {
     const filePath = this.resolve(key);
+    await fs.access(filePath); // throws if missing, so callers get a clean error instead of a broken response
     const { createReadStream } = await import("fs");
     return createReadStream(filePath);
   }
@@ -81,6 +82,9 @@ class GridFsStorageAdapter implements StorageAdapter {
 
   async getStream(key: string): Promise<NodeJS.ReadableStream> {
     const bucket = await this.bucket();
+    if (!(await bucket.find({ filename: key }).limit(1).hasNext())) {
+      throw new Error("Object not found");
+    }
     return bucket.openDownloadStreamByName(key);
   }
 
